@@ -19,4 +19,4 @@ class Competitor(Base):
 
     # Relationships
     competitor_product: Mapped[list["CompetitorProduct"]] = relationship("CompetitorProduct", back_populates="competitor", cascade="all, delete-orphan")
-    crawl_job: Mapped["CrawlJob"] = relationship("CrawlJob", back_populates="competitor")
+    crawl_jobs: Mapped["CrawlJob"] = relationship("CrawlJob", back_populates="competitor")
