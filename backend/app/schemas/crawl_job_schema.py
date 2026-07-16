@@ -3,7 +3,15 @@ from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel, Field, HttpUrl
 
+class CreateCrawlJobSchema(BaseModel):
+    competitor_id: UUID
 
+
+class UpdateCrawlJobSchema(BaseModel):
+    status: Optional[str] = None
+    completed_at: Optional[datetime] = None
+    records_collected: Optional[int] = None
+    error_message: Optional[str] = None
 
 class CrawlJobPublic(BaseModel):
     job_id: UUID
