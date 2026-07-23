@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     redis_socket_timeout_seconds: float = 5.0
     redis_default_ttl_seconds: int = 3600
 
+    jwt_algorithm: str
+    jwt_secret_key: str
+    jwt_default_exp_minutes: int = 30
+
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
