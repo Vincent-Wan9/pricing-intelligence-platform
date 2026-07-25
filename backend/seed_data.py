@@ -59,7 +59,7 @@ try:
             brand="AudioMax",
 
             category_id=category.category_id,
-            rule_id=pricing_rule.rule_id,
+            rule_id=rule.rule_id,
 
             safety_stock=20,
 
@@ -84,7 +84,7 @@ try:
             brand="KitchenPro",
 
             category_id=category.category_id,
-            rule_id=pricing_rule.rule_id,
+            rule_id=rule.rule_id,
 
             safety_stock=15,
 

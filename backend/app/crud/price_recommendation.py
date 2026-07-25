@@ -8,7 +8,13 @@ from app.models.price_recommendation import PriceRecommendation
 from app.schemas.price_recommendation_schema import CreatePriceRecommendationSchema
 
 
-class PriceRecommendationCRUD(CRUDBase[PriceRecommendation, CreatePriceRecommendationSchema]):
+class PriceRecommendationCRUD(
+    CRUDBase[
+        PriceRecommendation,
+        CreatePriceRecommendationSchema,
+        CreatePriceRecommendationSchema,
+    ]
+):
 
     def get_latest_recommendation(self, db: Session, product_id: UUID):
         stmt = (select(PriceRecommendation).where(PriceRecommendation.product_id == product_id)

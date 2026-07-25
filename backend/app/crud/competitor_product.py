@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
 from app.models.competitor_product import CompetitorProduct
-from app.schemas.competitor_product_schema import CreateCompetitorProductSchema, UpdateCompetitorProductSchema,
+from app.schemas.competitor_product_schema import CreateCompetitorProductSchema, UpdateCompetitorProductSchema
 
 
 

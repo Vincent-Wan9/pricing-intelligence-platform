@@ -10,7 +10,13 @@ from app.schemas.product_price_history_schema import CreateProductPriceHistorySc
 
 
 
-class ProductPriceHistoryCRUD(CRUDBase[ProductPriceHistory, CreateProductPriceHistorySchema]):
+class ProductPriceHistoryCRUD(
+    CRUDBase[
+        ProductPriceHistory,
+        CreateProductPriceHistorySchema,
+        CreateProductPriceHistorySchema,
+    ]
+):
 
     def get_price_history(self, db: Session, product_id: UUID):
         stmt = (select(ProductPriceHistory).where(ProductPriceHistory.product_id == product_id))

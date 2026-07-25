@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
 from app.models.demand_forecast import DemandForecast
-from app.schemas.demand_forecast_schema import CreateDemandForecastSchema, UpdateDemandForecastSchema,
+from app.schemas.demand_forecast_schema import CreateDemandForecastSchema, UpdateDemandForecastSchema
 
 
 

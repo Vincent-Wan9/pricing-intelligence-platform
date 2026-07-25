@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
 from app.models.pricing_rule import PricingRule
-from app.schemas.pricing_rule_schema import CreatePricingRuleSchema, UpdatePricingRuleSchema,
+from app.schemas.price_rule_schema import CreatePricingRuleSchema, UpdatePricingRuleSchema
 
 
 

@@ -25,8 +25,20 @@ class ProductCRUD(CRUDBase[Product, CreateProductSchema, UpdateProductSchema]):
 
         return list(db.scalars(stmt).all())
 
-    def get_active_products(self, db: Session):
-        stmt = (select(Product).where(Product.is_active == True).order_by(Product.product_name))
+    def get_active_products(
+        self,
+        db: Session,
+        *,
+        skip: int = 0,
+        limit: int = 100,
+    ):
+        stmt = (
+            select(Product)
+            .where(Product.is_active.is_(True))
+            .order_by(Product.product_name)
+            .offset(skip)
+            .limit(limit)
+        )
 
         return list(db.scalars(stmt).all())
 
