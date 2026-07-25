@@ -1,7 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
 
 # Virtual environments
-.venv/
 venv/
+.venv/
+env/
 
-# Environment variables
+# Environment variables / secrets
 .env
+.env.*
+!.env.example
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Type checking / linting
+.mypy_cache/
+.ruff_cache/
+.pyright/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Database / local runtime files
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker overrides
+docker-compose.override.yml
+
+# Temporary files
+*.tmp
+*.swp
+
+# Alembic temporary/editor artifacts
+alembic/__pycache__/
+alembic/versions/__pycache__/
+
+# Local uploads or generated data
+data/
+uploads/
