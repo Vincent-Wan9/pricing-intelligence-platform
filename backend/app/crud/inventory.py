@@ -16,8 +16,11 @@ class InventoryCRUD(CRUDBase[Inventory, CreateInventorySchema, UpdateInventorySc
         return db.scalar(stmt)
 
     def get_low_stock(self, db: Session, threshold: int):
-        stmt = (select(Inventory).where(Inventory.quantityon_hand_qty_on_hand <= threshold)
-            .order_by(Inventory.on_hand_qty))
+        stmt = (
+            select(Inventory)
+            .where(Inventory.on_hand_qty <= threshold)
+            .order_by(Inventory.on_hand_qty)
+        )
 
         return list(db.scalars(stmt).all())
 

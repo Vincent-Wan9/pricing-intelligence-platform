@@ -27,8 +27,14 @@ class CompetitorPriceCRUD(CRUDBase[CompetitorPrice, CreateCompetitorPriceSchema,
         return list(db.scalars(stmt).all())
 
     def get_prices_between(self, db: Session, competitor_product_id: UUID, start_date: datetime, end_date: datetime,):
-        stmt = (select(CompetitorPrice).where(CompetitorPrice.competitor_product_id == competitor_product_id, CompetitorPrice.price_date >= start_date,
-                     CompetitorPrice.crawl_timestamp <= end_date)
+        stmt = (
+            select(CompetitorPrice)
+            .where(
+                CompetitorPrice.competitor_product_id
+                == competitor_product_id,
+                CompetitorPrice.crawl_timestamp >= start_date,
+                CompetitorPrice.crawl_timestamp <= end_date,
+            )
             .order_by(CompetitorPrice.crawl_timestamp)
         )
 
