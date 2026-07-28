@@ -21,7 +21,7 @@ from app.services import (
     ProductValidationError,
 )
 from app.services.product_cache_service import ProductCacheService
-from app.services.product_price_service import validate_prices
+from app.services.pricing_validation import validate_prices
 from app.utils.generate_slug import generate_slug
 
 __all__ = [
