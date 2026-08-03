@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import pytest
 
+from app.core.config import settings
 from app.utils.security import (
     TokenError,
     create_access_token,
@@ -9,6 +10,15 @@ from app.utils.security import (
     hash_password,
     verify_password,
 )
+
+
+@pytest.fixture(autouse=True)
+def secure_test_jwt_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        settings,
+        "jwt_secret_key",
+        "test-only-secret-key-with-32-bytes",
+    )
 
 
 def test_hash_and_verify_password():
