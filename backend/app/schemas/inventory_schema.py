@@ -33,3 +33,7 @@ class InventoryPublic(InventoryBase):
 
 class DeleteInventoryResponseModel(BaseModel):
     detail: str
+
+
+class StockAdjustmentSchema(BaseModel):
+    quantity_delta: int
