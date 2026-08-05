@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -21,5 +21,13 @@ class CreatePriceRecommendationSchema(PriceRecommendationBase):
 class PriceRecommendationPublic(PriceRecommendationBase):
     recommendation_id: UUID
     generated_at: datetime
+    status: Literal["pending", "approved", "rejected"]
+    reviewed_by: Optional[UUID] = None
+    reviewed_at: Optional[datetime] = None
+    review_reason: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ReviewPriceRecommendationSchema(BaseModel):
+    reason: Optional[str] = Field(default=None, max_length=2000)
