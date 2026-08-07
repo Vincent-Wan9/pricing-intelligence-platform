@@ -24,3 +24,10 @@ class CrawlJobPublic(BaseModel):
 
     model_config = {"from_attributes": True}
 
+
+class CompleteCrawlJobSchema(BaseModel):
+    records_collected: int = Field(ge=0)
+
+
+class FailCrawlJobSchema(BaseModel):
+    error_message: str = Field(min_length=1)
