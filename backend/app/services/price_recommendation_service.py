@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -8,6 +9,7 @@ from app.crud.price_recommendation import price_recommendation_crud
 from app.models.price_recommendation import PriceRecommendation
 from app.models.pricing_rule import PricingRule
 from app.models.product import Product
+from app.models.user import User
 from app.schemas.price_recommendation_schema import (
     CreatePriceRecommendationSchema,
     PriceRecommendationPublic,
@@ -83,6 +85,32 @@ class PriceRecommendationService:
         self._validate_product(product_id)
         recommendations = self.crud.get_recommendation_history(self.db, product_id)
         return [PriceRecommendationPublic.model_validate(item) for item in recommendations]
+
+    def approve(self, recommendation_id: UUID, *, actor: User, reason: str | None = None) -> PriceRecommendationPublic:
+        return self._review(recommendation_id, actor=actor, status="approved", reason=reason)
+
+    def reject(self, recommendation_id: UUID, *, actor: User, reason: str | None = None) -> PriceRecommendationPublic:
+        return self._review(recommendation_id, actor=actor, status="rejected", reason=reason)
+
+    def _review(self, recommendation_id: UUID, *, actor: User, status: str, reason: str | None) -> PriceRecommendationPublic:
+        role = getattr(actor.role, "value", actor.role)
+        if role not in {"admin", "approver"}:
+            raise PriceRecommendationValidationError("Only approvers and admins can review recommendations")
+        recommendation = self._get_model(recommendation_id)
+        if recommendation.status != "pending":
+            raise PriceRecommendationValidationError("Only pending recommendations can be reviewed")
+        recommendation.status = status
+        recommendation.reviewed_by = actor.user_id
+        recommendation.reviewed_at = datetime.now(timezone.utc)
+        recommendation.review_reason = reason.strip() if reason else None
+        try:
+            self.db.add(recommendation)
+            self.db.commit()
+            self.db.refresh(recommendation)
+        except IntegrityError as exc:
+            self.db.rollback()
+            raise PriceRecommendationConflictError("Recommendation could not be reviewed") from exc
+        return PriceRecommendationPublic.model_validate(recommendation)
 
     def _get_model(self, recommendation_id: UUID) -> PriceRecommendation:
         recommendation = self.crud.get(self.db, recommendation_id)

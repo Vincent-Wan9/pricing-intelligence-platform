@@ -28,5 +28,6 @@ def update_item(item_id: UUID, data: UpdateCategorySchema, service: CategoryServ
 
 
 @router.delete("/{item_id}", status_code = 204, dependencies = [write])
-def delete_item(item_id: UUID, service: CategoryServiceDep): service.delete(item_id); 
-return Response(status_code = 204)
+def delete_item(item_id: UUID, service: CategoryServiceDep):
+    service.delete(item_id)
+    return Response(status_code = 204)

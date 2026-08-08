@@ -8,6 +8,8 @@ from sqlalchemy.orm import Session
 from app.crud.product import product_crud
 from app.models.product import Product
 from app.models.product_price_history import ProductPriceHistory
+from app.crud.product_price_history import product_price_history_crud
+from app.schemas.product_price_history_schema import ProductPriceHistoryPublic
 from app.models.user import User
 from app.schemas.product_schema import ProductPublic
 from app.services import (
@@ -31,6 +33,13 @@ class ProductPriceService:
         self.db = db
         self.cache = cache_service
         self.crud = product_crud
+
+    def get_history(self, product_id: UUID, *, skip: int = 0, limit: int = 100) -> list[ProductPriceHistoryPublic]:
+        self._get_model(product_id)
+        if skip < 0 or not 1 <= limit <= 1000:
+            raise ProductValidationError("Invalid pagination values")
+        records = product_price_history_crud.get_price_history(self.db, product_id)
+        return [ProductPriceHistoryPublic.model_validate(item) for item in records[skip:skip + limit]]
 
     async def update_price(self, product_id: UUID, new_price: Decimal, *, user: User, reason: str) -> ProductPublic:
         self._validate_permission(user)

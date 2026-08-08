@@ -11,17 +11,20 @@ from app.utils.security import (
 from app.crud.user import user_crud
 from app.models.user import User
 from app.schemas.user_schema import LoginSchema, TokenResponse
+from app.exceptions import AuthenticationError
+from app.utils.security import TokenError, decode_access_token
+from uuid import UUID
 
 
 class AuthServiceError(Exception):
     pass
 
 
-class InvalidCredentialsError(AuthServiceError):
+class InvalidCredentialsError(AuthenticationError, AuthServiceError):
     pass
 
 
-class InactiveUserError(AuthServiceError):
+class InactiveUserError(AuthenticationError, AuthServiceError):
     pass
 
 
@@ -46,6 +49,18 @@ class AuthService:
         expiration = timedelta(minutes=settings.jwt_default_exp_minutes)
         token = create_access_token(data={"sub": str(user.user_id)}, expiration=expiration)
         return TokenResponse(access_token=token, token_type="bearer")
+
+    def resolve_token(self, token: str) -> User:
+        try:
+            payload = decode_access_token(token)
+            user_id = UUID(payload["sub"])
+        except (TokenError, KeyError, TypeError, ValueError) as exc:
+            raise AuthenticationError("Could not validate credentials") from exc
+
+        user = self.user_crud.get(self.db, user_id)
+        if user is None or not user.is_active:
+            raise AuthenticationError("Could not validate credentials")
+        return user
 
     @staticmethod
     def build_password_hash(password: str) -> str:

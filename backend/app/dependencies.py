@@ -151,7 +151,7 @@ def require_roles(*allowed_roles: str) -> Callable[[User], User]:
 
 
 # Convenient route-parameter aliases, e.g. ``service: ProductServiceDep``.
-AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)] 
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 ProductServiceDep = Annotated[ProductService, Depends(get_product_service)]
 DemandForecastServiceDep = Annotated[DemandForecastService, Depends(get_demand_forecast_service)]

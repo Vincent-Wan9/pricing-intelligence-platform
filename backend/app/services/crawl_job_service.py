@@ -41,6 +41,12 @@ class CrawlJobService:
     def get(self, job_id: UUID) -> CrawlJobPublic:
         return CrawlJobPublic.model_validate(self._get_model(job_id))
 
+    def list(self, *, skip: int = 0, limit: int = 100) -> list[CrawlJobPublic]:
+        if skip < 0 or not 1 <= limit <= 1000:
+            raise CrawlJobValidationError("Invalid pagination values")
+        return [CrawlJobPublic.model_validate(item) for item in self.crud.get_all(self.db, 
+        skip=skip, limit=limit)]
+
     def create(self, job_in: CreateCrawlJobSchema) -> CrawlJobPublic:
         competitor = self.db.get(Competitor, job_in.competitor_id)
         if competitor is None:
