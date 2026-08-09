@@ -20,11 +20,14 @@ class CreatePriceRecommendationSchema(PriceRecommendationBase):
 
 class PriceRecommendationPublic(PriceRecommendationBase):
     recommendation_id: UUID
+    current_price: Optional[Decimal] = None
     generated_at: datetime
-    status: Literal["pending", "approved", "rejected"]
+    status: Literal["pending", "approved", "rejected", "applied"]
     reviewed_by: Optional[UUID] = None
     reviewed_at: Optional[datetime] = None
     review_reason: Optional[str] = None
+    applied_by: Optional[UUID] = None
+    applied_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 

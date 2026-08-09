@@ -9,6 +9,9 @@ class ProductPriceHistoryBase(BaseModel):
     product_id: UUID
     old_price: Decimal = Field(..., max_digits=10, decimal_places=2, ge=0)
     new_price: Decimal = Field(..., max_digits=10, decimal_places=2, ge=0)
+    change_reason: str
+    recommendation_id: Optional[UUID] = None
+    changed_by: Optional[UUID] = None
 
 
 class CreateProductPriceHistorySchema(ProductPriceHistoryBase):
