@@ -18,8 +18,11 @@ class ProductPriceHistoryCRUD(
     ]
 ):
 
-    def get_price_history(self, db: Session, product_id: UUID):
-        stmt = (select(ProductPriceHistory).where(ProductPriceHistory.product_id == product_id))
+    def get_price_history(self, db: Session, product_id: UUID, *, skip: int = 0, limit: int = 100):
+        stmt = (select(ProductPriceHistory)
+            .where(ProductPriceHistory.product_id == product_id)
+            .order_by(ProductPriceHistory.changed_at.desc())
+            .offset(skip).limit(limit))
 
         return list(db.scalars(stmt).all())
 

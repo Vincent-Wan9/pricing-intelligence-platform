@@ -13,8 +13,18 @@ class PriceRecommendationCRUD(
         PriceRecommendation,
         CreatePriceRecommendationSchema,
         CreatePriceRecommendationSchema,
-    ]
-):
+    ]):
+    
+    def get_for_update(self, db: Session, recommendation_id: UUID):
+        return db.scalar(select(PriceRecommendation).where(
+            PriceRecommendation.recommendation_id == recommendation_id
+        ).with_for_update())
+
+    def list(self, db: Session, *, skip: int = 0, limit: int = 100):
+        stmt = (select(PriceRecommendation)
+            .order_by(PriceRecommendation.generated_at.desc())
+            .offset(skip).limit(limit))
+        return list(db.scalars(stmt).all())
 
     def get_latest_recommendation(self, db: Session, product_id: UUID):
         stmt = (select(PriceRecommendation).where(PriceRecommendation.product_id == product_id)
