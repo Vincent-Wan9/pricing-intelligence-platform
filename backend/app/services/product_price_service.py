@@ -38,8 +38,8 @@ class ProductPriceService:
         self._get_model(product_id)
         if skip < 0 or not 1 <= limit <= 1000:
             raise ProductValidationError("Invalid pagination values")
-        records = product_price_history_crud.get_price_history(self.db, product_id)
-        return [ProductPriceHistoryPublic.model_validate(item) for item in records[skip:skip + limit]]
+        records = product_price_history_crud.get_price_history(self.db, product_id, skip=skip, limit=limit)
+        return [ProductPriceHistoryPublic.model_validate(item) for item in records]
 
     async def update_price(self, product_id: UUID, new_price: Decimal, *, user: User, reason: str) -> ProductPublic:
         self._validate_permission(user)
@@ -77,6 +77,8 @@ class ProductPriceService:
                     product_id=product.product_id,
                     old_price=old_price,
                     new_price=new_price,
+                    change_reason=normalized_reason,
+                    changed_by=user.user_id,
                 )
             )
             self.db.commit()
