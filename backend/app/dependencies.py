@@ -67,8 +67,11 @@ def get_pricing_rule_service(db: DatabaseSession) -> PricingRuleService:
     return PricingRuleService(db)
 
 
-def get_price_recommendation_service(db: DatabaseSession) -> PriceRecommendationService:
-    return PriceRecommendationService(db)
+def get_price_recommendation_service(
+    db: DatabaseSession,
+    client: Annotated[RedisClient, Depends(get_redis_client)],
+) -> PriceRecommendationService:
+    return PriceRecommendationService(db, ProductCacheService(client))
 
 
 def get_crawl_job_service(db: DatabaseSession) -> CrawlJobService:
