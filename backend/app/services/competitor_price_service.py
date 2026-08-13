@@ -45,11 +45,14 @@ class CompetitorPriceService:
         return CompetitorPricePublic.model_validate(record)
 
     def record(self, price_in: CreateCompetitorPriceSchema) -> CompetitorPricePublic:
-        self._validate_mapping(price_in.competitor_product_id)
+        mapping = self._validate_mapping(price_in.competitor_product_id)
         self._validate_price(price_in.competitor_price)
 
         record = CompetitorPrice(**price_in.model_dump())
         try:
+            mapping.last_crawled_at = price_in.crawl_timestamp
+            mapping.last_crawl_error = None
+            self.db.add(mapping)
             self.db.add(record)
             self.db.commit()
             self.db.refresh(record)
@@ -90,13 +93,27 @@ class CompetitorPriceService:
         records = self.db.scalars(stmt).all()
         return [CompetitorPricePublic.model_validate(item) for item in records]
 
-    def _validate_mapping(self, competitor_product_id: UUID) -> None:
-        if self.db.get(CompetitorProduct, competitor_product_id) is None:
+    def get_for_product(self, product_id: UUID, *, limit: int = 500) -> list[CompetitorPricePublic]:
+        if not 1 <= limit <= 5000:
+            raise CompetitorPriceValidationError("limit must be between 1 and 5000")
+        stmt = (
+            select(CompetitorPrice)
+            .join(CompetitorProduct)
+            .where(CompetitorProduct.product_id == product_id)
+            .order_by(CompetitorPrice.crawl_timestamp.desc())
+            .limit(limit)
+        )
+        return [CompetitorPricePublic.model_validate(item) for item in self.db.scalars(stmt).all()]
+
+    def _validate_mapping(self, competitor_product_id: UUID) -> CompetitorProduct:
+        mapping = self.db.get(CompetitorProduct, competitor_product_id)
+        if mapping is None:
             raise CompetitorPriceValidationError(
                 f"Competitor product {competitor_product_id} does not exist")
+        return mapping
 
     @staticmethod
     def _validate_price(price: Decimal) -> None:
-        if price < Decimal("0"):
+        if price <= Decimal("0"):
             raise CompetitorPriceValidationError(
-                "competitor_price cannot be negative")
+                "competitor_price must be greater than zero")

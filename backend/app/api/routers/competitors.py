@@ -1,6 +1,7 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Response
-from app.dependencies import CompetitorServiceDep, require_roles
+from app.dependencies import CompetitorProductServiceDep, CompetitorServiceDep, require_roles
+from app.schemas.competitor_product_schema import CompetitorProductPublic
 from app.schemas.competitor_schema import CompetitorPublic, CreateCompetitorSchema, UpdateCompetitorSchema
 
 router = APIRouter(prefix="/competitors", tags=["competitors"])
@@ -16,6 +17,11 @@ def list_items(service: CompetitorServiceDep,skip: int = Query(0,ge=0), limit: i
 @router.get("/{item_id}", response_model = CompetitorPublic, dependencies = [read])
 def get_item(item_id: UUID, service: CompetitorServiceDep): 
     return service.get(item_id)
+
+
+@router.get("/{item_id}/products", response_model=list[CompetitorProductPublic], dependencies=[read])
+def products(item_id: UUID, service: CompetitorProductServiceDep, active_only: bool = False):
+    return service.list_for_competitor(item_id, active_only=active_only)
 
 
 @router.post("", response_model = CompetitorPublic,status_code=201, dependencies = [write])

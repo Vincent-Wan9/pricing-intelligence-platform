@@ -14,6 +14,7 @@ class CompetitorPriceBase(BaseModel):
 
 class CreateCompetitorPriceSchema(CompetitorPriceBase):
     competitor_product_id: UUID
+    crawl_job_id: UUID | None = None
 
 
 class UpdateCompetitorPriceSchema(BaseModel):
@@ -26,6 +27,7 @@ class UpdateCompetitorPriceSchema(BaseModel):
 class CompetitorPricePublic(CompetitorPriceBase):
     price_id: UUID
     competitor_product_id: UUID
+    crawl_job_id: UUID | None = None
 
     model_config = {"from_attributes": True}
 

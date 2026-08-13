@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from uuid import UUID
 
 from sqlalchemy import select
@@ -43,6 +45,20 @@ class CompetitorProductService:
         self._validate_pagination(skip, limit)
         mappings = self.crud.get_all(self.db, skip=skip, limit=limit)
         return [CompetitorProductPublic.model_validate(item) for item in mappings]
+
+    def list_for_competitor(self, competitor_id: UUID, *, active_only: bool = False) -> list[CompetitorProductPublic]:
+        if self.db.get(Competitor, competitor_id) is None:
+            raise CompetitorProductNotFoundError(f"Competitor {competitor_id} was not found")
+        return [CompetitorProductPublic.model_validate(item) for item in self.crud.get_by_competitor(
+            self.db, competitor_id, active_only=active_only
+        )]
+
+    def list_for_product(self, product_id: UUID, *, active_only: bool = False) -> list[CompetitorProductPublic]:
+        if self.db.get(Product, product_id) is None:
+            raise CompetitorProductNotFoundError(f"Product {product_id} was not found")
+        return [CompetitorProductPublic.model_validate(item) for item in self.crud.get_by_product(
+            self.db, product_id, active_only=active_only
+        )]
 
     def create(self, mapping_in: CreateCompetitorProductSchema) -> CompetitorProductPublic:
         self._validate_references(

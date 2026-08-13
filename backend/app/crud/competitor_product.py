@@ -11,13 +11,17 @@ from app.schemas.competitor_product_schema import CreateCompetitorProductSchema,
 
 class CompetitorProductCRUD(CRUDBase[CompetitorProduct, CreateCompetitorProductSchema, UpdateCompetitorProductSchema]):
 
-    def get_by_product(self, db: Session, product_id: UUID):
-        stmt = (select(CompetitorProduct).where(CompetitorProduct.product_id == product_id))
+    def get_by_product(self, db: Session, product_id: UUID, *, active_only: bool = False):
+        stmt = select(CompetitorProduct).where(CompetitorProduct.product_id == product_id)
+        if active_only:
+            stmt = stmt.where(CompetitorProduct.is_active.is_(True))
 
         return list(db.scalars(stmt).all())
 
-    def get_by_competitor(self, db: Session, competitor_id: UUID):
-        stmt = (select(CompetitorProduct).where(CompetitorProduct.competitor_id == competitor_id))
+    def get_by_competitor(self, db: Session, competitor_id: UUID, *, active_only: bool = False):
+        stmt = select(CompetitorProduct).where(CompetitorProduct.competitor_id == competitor_id)
+        if active_only:
+            stmt = stmt.where(CompetitorProduct.is_active.is_(True))
 
         return list(db.scalars(stmt).all())
 

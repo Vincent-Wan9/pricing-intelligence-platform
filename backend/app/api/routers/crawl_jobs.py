@@ -23,6 +23,11 @@ def create_item(data: CreateCrawlJobSchema, service: CrawlJobServiceDep):
     return service.create(data)
 
 
+@router.post("/competitors/{competitor_id}", response_model=CrawlJobPublic, status_code=201, dependencies=[write])
+async def crawl_competitor(competitor_id: UUID, service: CrawlJobServiceDep):
+    return await service.crawl_competitor(competitor_id)
+
+
 @router.post("/{job_id}/start", response_model = CrawlJobPublic, dependencies = [write])
 def start(job_id: UUID, service: CrawlJobServiceDep): 
     return service.start(job_id)

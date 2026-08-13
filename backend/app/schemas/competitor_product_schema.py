@@ -8,6 +8,7 @@ class CompetitorProductBase(BaseModel):
     competitor_sku: str = Field(..., max_length=100)
     competitor_product_name: str = Field(..., max_length=255)
     competitor_product_url: HttpUrl = Field(...)
+    is_active: bool = True
 
 
 class CreateCompetitorProductSchema(CompetitorProductBase):
@@ -19,6 +20,7 @@ class UpdateCompetitorProductSchema(BaseModel):
     competitor_sku: Optional[str] = Field(None, max_length=100)
     competitor_product_name: Optional[str] = Field(None, max_length=255)
     competitor_product_url: Optional[HttpUrl] = Field(None)
+    is_active: Optional[bool] = None
 
 
 class CompetitorProductPublic(CompetitorProductBase):
@@ -26,6 +28,8 @@ class CompetitorProductPublic(CompetitorProductBase):
     product_id: UUID
     competitor_id: UUID
     created_at: datetime
+    last_crawled_at: datetime | None = None
+    last_crawl_error: str | None = None
 
     model_config = {"from_attributes": True}
 

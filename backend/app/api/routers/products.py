@@ -1,6 +1,8 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Response
-from app.dependencies import ProductServiceDep, require_roles
+from app.dependencies import CompetitorPriceServiceDep, CompetitorProductServiceDep, ProductServiceDep, require_roles
+from app.schemas.competitor_price_schema import CompetitorPricePublic
+from app.schemas.competitor_product_schema import CompetitorProductPublic
 from app.schemas.product_schema import CreateProductSchema, ProductPublic, UpdateProductSchema
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -16,6 +18,16 @@ def list_items(service: ProductServiceDep, skip: int = Query(0, ge=0), limit: in
 @router.get("/{item_id}", response_model = ProductPublic, dependencies = [read])
 async def get_item(item_id: UUID, service: ProductServiceDep):
     return await service.get(item_id)
+
+
+@router.get("/{item_id}/competitor-mappings", response_model=list[CompetitorProductPublic], dependencies=[read])
+def competitor_mappings(item_id: UUID, service: CompetitorProductServiceDep, active_only: bool = False):
+    return service.list_for_product(item_id, active_only=active_only)
+
+
+@router.get("/{item_id}/competitor-prices", response_model=list[CompetitorPricePublic], dependencies=[read])
+def competitor_prices(item_id: UUID, service: CompetitorPriceServiceDep, limit: int = Query(500, ge=1, le=5000)):
+    return service.get_for_product(item_id, limit=limit)
 
 
 @router.post("", response_model = ProductPublic, status_code = 201, dependencies = [write])
