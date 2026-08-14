@@ -87,6 +87,9 @@ CREATE TABLE competitor_products (
     competitor_sku VARCHAR(100) NOT NULL,
     competitor_product_name VARCHAR(255) NOT NULL,
     competitor_product_url TEXT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    last_crawled_at TIMESTAMPTZ,
+    last_crawl_error TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(product_id, competitor_id)
 );
@@ -97,10 +100,12 @@ CREATE TABLE competitor_products (
 CREATE TABLE competitor_prices (
     price_id UUID PRIMARY KEY,
     competitor_product_id UUID NOT NULL REFERENCES competitor_products(competitor_product_id),
+    crawl_job_id UUID,
     competitor_price DECIMAL(10,2) NOT NULL,
     stock_qty INTEGER,
     in_stock BOOLEAN,
-    crawl_timestamp TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    crawl_timestamp TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(crawl_job_id, competitor_product_id)
 );
 CREATE INDEX idx_competitor_prices ON competitor_prices (competitor_product_id, crawl_timestamp DESC);
 -- ==========================
@@ -169,3 +174,6 @@ CREATE TABLE crawl_jobs (
     records_collected INTEGER DEFAULT 0,
     error_message TEXT
 );
+ALTER TABLE competitor_prices
+    ADD CONSTRAINT fk_competitor_prices_crawl_job
+    FOREIGN KEY (crawl_job_id) REFERENCES crawl_jobs(job_id) ON DELETE SET NULL;

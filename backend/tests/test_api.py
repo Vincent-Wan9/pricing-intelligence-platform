@@ -8,7 +8,7 @@ from uuid import uuid4
 
 import pytest
 import anyio.to_thread
-from app.dependencies import get_auth_service, get_current_user, get_price_recommendation_service, get_product_service, get_user_service
+from app.dependencies import get_auth_service, get_crawl_job_service, get_current_user, get_price_recommendation_service, get_product_service, get_user_service
 from app.main import create_app
 from app.core.config import settings
 from app.services import ProductNotFoundError
@@ -170,6 +170,21 @@ def test_non_admin_blocked_from_user_administration(app, client):
     app.dependency_overrides[get_current_user]=lambda:user("approver")
     app.dependency_overrides[get_user_service]=lambda:MagicMock()
     assert client.get("/users").status_code == 403
+
+
+@pytest.mark.parametrize(("role", "expected"), [("viewer", 403), ("editor", 201), ("admin", 201)])
+def test_crawl_trigger_authorization(app, client, role, expected):
+    competitor_id, job_id = uuid4(), uuid4()
+    service = MagicMock()
+    service.crawl_competitor = AsyncMock(return_value={
+        "job_id": job_id, "competitor_id": competitor_id, "status": "completed",
+        "started_at": datetime.now(timezone.utc), "completed_at": datetime.now(timezone.utc),
+        "records_collected": 1, "error_message": None,
+    })
+    app.dependency_overrides[get_crawl_job_service] = lambda: service
+    app.dependency_overrides[get_current_user] = lambda: user(role)
+    response = client.post(f"/crawl-jobs/competitors/{competitor_id}")
+    assert response.status_code == expected
 
 
 @pytest.mark.parametrize("exception,status_code", [(ProductNotFoundError("Product not found"),404)])
