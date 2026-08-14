@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     redis_socket_timeout_seconds: float = 5.0
     redis_default_ttl_seconds: int = 3600
 
+    crawler_timeout_seconds: float = 10.0
+    crawler_max_retries: int = 2
+    crawler_retry_backoff_seconds: float = 0.25
+    crawler_request_delay_seconds: float = 0.1
+    crawler_user_agent: str = "PricingIntelligenceBot/1.0 (+public product price monitoring)"
+
     jwt_algorithm: str
     jwt_secret_key: str
     jwt_default_exp_minutes: int = 30

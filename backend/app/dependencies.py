@@ -11,6 +11,7 @@ from app.models.user import User
 from app.services.auth_service import AuthService
 from app.services.category_service import CategoryService
 from app.services.competitor_price_service import CompetitorPriceService
+from app.services.competitor_cache_service import CompetitorCacheService
 from app.services.competitor_product_service import CompetitorProductService
 from app.services.competitor_service import CompetitorService
 from app.services.crawl_job_service import CrawlJobService
@@ -74,8 +75,11 @@ def get_price_recommendation_service(
     return PriceRecommendationService(db, ProductCacheService(client))
 
 
-def get_crawl_job_service(db: DatabaseSession) -> CrawlJobService:
-    return CrawlJobService(db)
+def get_crawl_job_service(
+    db: DatabaseSession,
+    client: Annotated[RedisClient, Depends(get_redis_client)],
+) -> CrawlJobService:
+    return CrawlJobService(db, cache_service=CompetitorCacheService(client))
 
 
 def get_demand_forecast_service(db: DatabaseSession) -> DemandForecastService:
