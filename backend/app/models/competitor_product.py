@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Boolean, ForeignKey, String, Text, DateTime, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, String, Text, DateTime, Index, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -20,7 +20,10 @@ class CompetitorProduct(Base):
     last_crawled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_crawl_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
-    __table_args__ = (UniqueConstraint("product_id", "competitor_id", name="uq_product_competitor"),)
+    __table_args__ = (
+        UniqueConstraint("product_id", "competitor_id", name="uq_product_competitor"),
+        Index("ix_competitor_products_competitor_id", "competitor_id"),
+    )
 
     # Relationships
     product: Mapped["Product"] = relationship("Product", back_populates="competitor_product")

@@ -3,8 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import Boolean, ForeignKey, Numeric, String, Text, func, Integer, DateTime
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,6 +12,14 @@ from app.core.database import Base
 
 class Inventory(Base):
     __tablename__ = "inventories"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "product_id",
+            "vendor",
+            name="uq_inventories_product_vendor",
+        ),
+    )
 
     inventory_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     product_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("products.product_id", ondelete="CASCADE"), nullable=False)
@@ -23,4 +30,4 @@ class Inventory(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.current_timestamp(), onupdate=func.now(), nullable=False)
 
     # Relationships 
-    product: Mapped["Product"] = relationship("Product", back_populates="inventory")
+    product: Mapped["Product"] = relationship("Product", back_populates="inventories")

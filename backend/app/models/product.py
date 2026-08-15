@@ -39,7 +39,11 @@ class Product(Base):
     updated_at: Mapped[datetime] = mapped_column(default=func.current_timestamp(), onupdate=func.now())
 
     # Relationships
-    inventory: Mapped["Inventory"] = relationship("Inventory", back_populates="product")
+    inventories: Mapped[list["Inventory"]] = relationship(
+        "Inventory",
+        back_populates="product",
+        cascade="all, delete-orphan",
+    )
     competitor_product: Mapped[list["CompetitorProduct"]] = relationship("CompetitorProduct", back_populates="product")
     product_price_history: Mapped[list["ProductPriceHistory"]] = relationship("ProductPriceHistory", back_populates="product", cascade="all, delete-orphan")
     pricing_rule: Mapped["PricingRule"] = relationship("PricingRule")
@@ -50,4 +54,3 @@ class Product(Base):
     
 
     
-
