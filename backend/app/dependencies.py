@@ -56,8 +56,11 @@ def get_competitor_product_service(db: DatabaseSession) -> CompetitorProductServ
     return CompetitorProductService(db)
 
 
-def get_competitor_price_service(db: DatabaseSession) -> CompetitorPriceService:
-    return CompetitorPriceService(db)
+def get_competitor_price_service(
+    db: DatabaseSession,
+    client: Annotated[RedisClient, Depends(get_redis_client)],
+) -> CompetitorPriceService:
+    return CompetitorPriceService(db, CompetitorCacheService(client))
 
 
 def get_inventory_service(db: DatabaseSession) -> InventoryService:

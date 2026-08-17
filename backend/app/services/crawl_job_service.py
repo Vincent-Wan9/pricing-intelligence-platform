@@ -130,7 +130,7 @@ class CrawlJobService:
                 await asyncio.sleep(self.request_delay_seconds)
             try:
                 result = await crawler.crawl_product(mapping)
-                price_service.record(CreateCompetitorPriceSchema(
+                await price_service.record(CreateCompetitorPriceSchema(
                     competitor_product_id=mapping.competitor_product_id,
                     crawl_job_id=created.job_id,
                     competitor_price=result.price,
@@ -141,7 +141,9 @@ class CrawlJobService:
                 successes += 1
                 if self.cache is not None:
                     await self.cache.invalidate_price_inputs(
-                        product_id=mapping.product_id, competitor_id=competitor_id
+                        product_id=mapping.product_id,
+                        competitor_id=competitor_id,
+                        mapping_id=mapping.competitor_product_id,
                     )
             except (CrawlerError, CompetitorPriceConflictError) as exc:
                 message = f"{mapping.competitor_product_id}: {exc}"

@@ -13,6 +13,7 @@ from app.schemas.competitor_price_schema import (
     CompetitorPricePublic,
     CreateCompetitorPriceSchema,
 )
+from app.services.competitor_cache_service import CompetitorCacheService
 
 
 class CompetitorPriceServiceError(Exception):
@@ -32,9 +33,10 @@ class CompetitorPriceValidationError(CompetitorPriceServiceError):
 
 
 class CompetitorPriceService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: Session, cache_service: CompetitorCacheService | None = None) -> None:
         self.db = db
         self.crud = competitor_price_crud
+        self.cache = cache_service
 
     def get(self, price_id: UUID) -> CompetitorPricePublic:
         record = self.crud.get(self.db, price_id)
@@ -44,7 +46,7 @@ class CompetitorPriceService:
             )
         return CompetitorPricePublic.model_validate(record)
 
-    def record(self, price_in: CreateCompetitorPriceSchema) -> CompetitorPricePublic:
+    async def record(self, price_in: CreateCompetitorPriceSchema) -> CompetitorPricePublic:
         mapping = self._validate_mapping(price_in.competitor_product_id)
         self._validate_price(price_in.competitor_price)
 
@@ -60,15 +62,30 @@ class CompetitorPriceService:
             self.db.rollback()
             raise CompetitorPriceConflictError(
                 "Competitor price could not be recorded") from exc
-        return CompetitorPricePublic.model_validate(record)
+        result = CompetitorPricePublic.model_validate(record)
+        if self.cache is not None:
+            await self.cache.invalidate_price_inputs(
+                product_id=mapping.product_id,
+                competitor_id=mapping.competitor_id,
+                mapping_id=mapping.competitor_product_id,
+            )
+            await self.cache.store_latest(mapping.competitor_product_id, result)
+        return result
 
-    def get_latest(self, competitor_product_id: UUID) -> CompetitorPricePublic:
+    async def get_latest(self, competitor_product_id: UUID) -> CompetitorPricePublic:
+        if self.cache is not None:
+            cached = await self.cache.get_latest(competitor_product_id)
+            if cached is not None:
+                return cached
         self._validate_mapping(competitor_product_id)
         record = self.crud.get_latest_price(self.db, competitor_product_id)
         if record is None:
             raise CompetitorPriceNotFoundError(
                 "No competitor price has been recorded for this mapping")
-        return CompetitorPricePublic.model_validate(record)
+        result = CompetitorPricePublic.model_validate(record)
+        if self.cache is not None:
+            await self.cache.store_latest(competitor_product_id, result)
+        return result
 
     def get_history(self, competitor_product_id: UUID, *, start_at: datetime | None = None, end_at: datetime | None = None, limit: int = 500,
                     ) -> list[CompetitorPricePublic]:

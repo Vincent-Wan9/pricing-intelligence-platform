@@ -5,6 +5,7 @@ from pydantic import ValidationError
 from redis.exceptions import RedisError
 
 from app.core.redis import RedisClient
+from app.core.config import settings
 from app.schemas.product_schema import ProductPublic
 
 logger = logging.getLogger(__name__)
@@ -28,10 +29,12 @@ class ProductCacheService:
             await self.redis.set_json(
                 self.id_key(product.product_id),
                 payload,
+                ttl_seconds=settings.redis_product_ttl_seconds,
             )
             await self.redis.set_json(
                 self.sku_key(product.sku),
                 payload,
+                ttl_seconds=settings.redis_product_ttl_seconds,
             )
         except (RedisError, RuntimeError):
             logger.warning(
