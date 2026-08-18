@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     redis_connect_timeout_seconds: float = 5.0
     redis_socket_timeout_seconds: float = 5.0
     redis_default_ttl_seconds: int = 3600
+    redis_product_ttl_seconds: int = 900
+    redis_competitor_price_ttl_seconds: int = 300
 
     crawler_timeout_seconds: float = 10.0
     crawler_max_retries: int = 2

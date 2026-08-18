@@ -15,13 +15,13 @@ def get_item(price_id: UUID, service: CompetitorPriceServiceDep):
 
 
 @router.post("", response_model = CompetitorPricePublic, status_code = 201, dependencies = [write])
-def record(data: CreateCompetitorPriceSchema, service: CompetitorPriceServiceDep): 
-    return service.record(data)
+async def record(data: CreateCompetitorPriceSchema, service: CompetitorPriceServiceDep):
+    return await service.record(data)
 
 
 @router.get("/product/{mapping_id}/latest", response_model = CompetitorPricePublic, dependencies = [read])
-def latest(mapping_id: UUID, service: CompetitorPriceServiceDep): 
-    return service.get_latest(mapping_id)
+async def latest(mapping_id: UUID, service: CompetitorPriceServiceDep):
+    return await service.get_latest(mapping_id)
 
 
 @router.get("/product/{mapping_id}/history", response_model = list[CompetitorPricePublic], dependencies = [read])
