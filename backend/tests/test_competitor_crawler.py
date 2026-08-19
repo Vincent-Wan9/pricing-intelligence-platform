@@ -173,19 +173,19 @@ def test_partial_failure_completes_and_preserves_success(monkeypatch):
     first, second = mapping(), mapping()
     second.competitor_id = first.competitor_id
     service, cache, competitor_id = orchestrator([html(), CrawlerFetchError("timeout")], [first, second])
-    record = MagicMock()
+    record = AsyncMock()
     monkeypatch.setattr("app.services.crawl_job_service.CompetitorPriceService.record", record)
     result = asyncio.run(service.crawl_competitor(competitor_id))
     assert result.status == "completed"
     assert result.records_collected == 1
-    record.assert_called_once()
+    record.assert_awaited_once()
     cache.invalidate_price_inputs.assert_awaited_once()
 
 
 def test_inactive_mapping_is_skipped(monkeypatch):
     inactive = mapping(active=False)
     service, _, competitor_id = orchestrator([html()], [inactive])
-    record = MagicMock()
+    record = AsyncMock()
     monkeypatch.setattr("app.services.crawl_job_service.CompetitorPriceService.record", record)
     result = asyncio.run(service.crawl_competitor(competitor_id))
     assert result.status == "failed"
@@ -196,7 +196,7 @@ def test_inactive_mapping_is_skipped(monkeypatch):
 def test_total_failure_marks_job_failed_with_error(monkeypatch):
     item = mapping()
     service, _, competitor_id = orchestrator([CrawlerNotFoundError("not found")], [item])
-    monkeypatch.setattr("app.services.crawl_job_service.CompetitorPriceService.record", MagicMock())
+    monkeypatch.setattr("app.services.crawl_job_service.CompetitorPriceService.record", AsyncMock())
     result = asyncio.run(service.crawl_competitor(competitor_id))
     assert result.status == "failed"
     assert "not found" in result.error_message
@@ -213,5 +213,5 @@ def test_price_duplicate_conflict_rolls_back_and_unique_constraint_exists():
         crawl_timestamp=datetime.now(timezone.utc),
     )
     with pytest.raises(CompetitorPriceConflictError):
-        CompetitorPriceService(db).record(data)
+        asyncio.run(CompetitorPriceService(db).record(data))
     db.rollback.assert_called_once()
