@@ -42,7 +42,8 @@ class DeleteUserSchema(BaseModel):
 
 
 class LoginSchema(BaseModel):
-    email: EmailStr
+    # OAuth calls the form field ``username``; it may contain either login key.
+    email: str = Field(..., min_length=3, max_length=255)
     password: str = Field(..., min_length=8)
 
 

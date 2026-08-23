@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str
     jwt_secret_key: str
     jwt_default_exp_minutes: int = 30
+    cors_origins: str = "http://localhost:5173"
 
 
     model_config = SettingsConfigDict(
