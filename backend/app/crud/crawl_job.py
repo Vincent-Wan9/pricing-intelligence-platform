@@ -23,6 +23,16 @@ class CrawlJobCRUD(CRUDBase[CrawlJob, CreateCrawlJobSchema, UpdateCrawlJobSchema
 
         return db.scalar(stmt)
 
+    def get_active_job(self, db: Session, competitor_id: UUID):
+        stmt = (select(CrawlJob).where(
+            CrawlJob.competitor_id == competitor_id,
+            CrawlJob.status.in_(("pending", "running")),
+        ).order_by(CrawlJob.started_at.desc()).limit(1))
+        return db.scalar(stmt)
+
+    def get_for_update(self, db: Session, job_id: UUID):
+        return db.scalar(select(CrawlJob).where(CrawlJob.job_id == job_id).with_for_update())
+
     def get_by_status(self, db: Session, status: str):
         stmt = (select(CrawlJob).where(CrawlJob.status == status)
             .order_by(CrawlJob.started_at.desc()))

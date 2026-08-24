@@ -62,6 +62,9 @@ class CompetitorPriceService:
             self.db.rollback()
             raise CompetitorPriceConflictError(
                 "Competitor price could not be recorded") from exc
+        except Exception:
+            self.db.rollback()
+            raise
         result = CompetitorPricePublic.model_validate(record)
         if self.cache is not None:
             await self.cache.invalidate_price_inputs(
