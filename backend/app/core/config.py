@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     redis_product_ttl_seconds: int = 900
     redis_competitor_price_ttl_seconds: int = 300
 
+    celery_broker_url: str = "redis://localhost:6379/1"
+    celery_result_backend: str = "redis://localhost:6379/1"
+    competitor_crawl_schedule_seconds: int = 21600
+    celery_task_always_eager: bool = False
+
     crawler_timeout_seconds: float = 10.0
     crawler_max_retries: int = 2
     crawler_retry_backoff_seconds: float = 0.25
