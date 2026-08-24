@@ -17,7 +17,7 @@ class CrawlJobPublic(BaseModel):
     job_id: UUID
     competitor_id: UUID
     status: str
-    started_at: datetime
+    started_at: Optional[datetime]
     completed_at: Optional[datetime]
     records_collected: int
     error_message: Optional[str]

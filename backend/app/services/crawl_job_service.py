@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections.abc import Callable
 from datetime import datetime, timezone
 from uuid import UUID
 
@@ -33,6 +34,10 @@ class CrawlJobConflictError(CrawlJobServiceError):
 
 
 class CrawlJobValidationError(CrawlJobServiceError):
+    pass
+
+
+class CrawlJobEnqueueError(CrawlJobServiceError):
     pass
 
 
@@ -83,8 +88,58 @@ class CrawlJobService:
         except IntegrityError as exc:
             self.db.rollback()
             raise CrawlJobConflictError("Crawl job could not be created") from exc
+        except Exception:
+            self.db.rollback()
+            raise
 
         return CrawlJobPublic.model_validate(job)
+
+    def enqueue_competitor(
+        self,
+        competitor_id: UUID,
+        dispatcher: Callable[[str], object] | None = None,
+    ) -> tuple[CrawlJobPublic, bool]:
+        """Create one pending job and dispatch it, or return an existing active job."""
+        active = self.crud.get_active_job(self.db, competitor_id)
+        if active is not None:
+            return CrawlJobPublic.model_validate(active), False
+
+        try:
+            job = self.create(CreateCrawlJobSchema(competitor_id=competitor_id))
+        except CrawlJobConflictError:
+            # The partial unique index resolves races between API/Beat processes.
+            active = self.crud.get_active_job(self.db, competitor_id)
+            if active is None:
+                raise
+            return CrawlJobPublic.model_validate(active), False
+
+        try:
+            (dispatcher or self._dispatch)(str(job.job_id))
+        except Exception as exc:
+            logger.exception("Could not enqueue crawl job %s", job.job_id)
+            self.fail(job.job_id, error_message="The crawl job could not be enqueued")
+            raise CrawlJobEnqueueError("The crawl job could not be enqueued") from exc
+        return job, True
+
+    @staticmethod
+    def _dispatch(job_id: str) -> object:
+        from app.tasks.crawl_tasks import execute_competitor_crawl
+
+        return execute_competitor_crawl.delay(job_id)
+
+    def claim(self, job_id: UUID) -> CrawlJobPublic | None:
+        """Atomically claim a pending job; duplicate task deliveries become no-ops."""
+        job = self.crud.get_for_update(self.db, job_id)
+        if job is None:
+            raise CrawlJobNotFoundError(f"Crawl job {job_id} was not found")
+        if getattr(job.status, "value", job.status) != "pending":
+            self.db.rollback()
+            return None
+        job.status = "running"
+        job.started_at = datetime.now(timezone.utc)
+        job.completed_at = None
+        job.error_message = None
+        return self._save(job)
 
     def start(self, job_id: UUID) -> CrawlJobPublic:
         job = self._get_model(job_id)
@@ -115,9 +170,27 @@ class CrawlJobService:
         return self._save(job)
 
     async def crawl_competitor(self, competitor_id: UUID) -> CrawlJobPublic:
-        """Crawl active mappings with per-observation commits and isolated failures."""
+        """Backward-compatible synchronous orchestration used by service callers/tests."""
         created = self.create(CreateCrawlJobSchema(competitor_id=competitor_id))
         self.start(created.job_id)
+        return await self._crawl_claimed_job(created.job_id, competitor_id)
+
+    async def execute_job(self, job_id: UUID) -> CrawlJobPublic:
+        """Execute an existing pending job with persisted terminal state."""
+        existing = self._get_model(job_id)
+        competitor_id = existing.competitor_id
+        claimed = self.claim(job_id)
+        if claimed is None:
+            return self.get(job_id)
+        try:
+            return await self._crawl_claimed_job(job_id, competitor_id)
+        except Exception as exc:
+            self.db.rollback()
+            logger.exception("Crawl job %s failed unexpectedly", job_id)
+            return self._fail_safely(job_id, f"Unexpected worker failure: {exc}")
+
+    async def _crawl_claimed_job(self, job_id: UUID, competitor_id: UUID) -> CrawlJobPublic:
+        """Crawl active mappings with per-observation commits and isolated failures."""
         mappings = self.db.get(Competitor, competitor_id).competitor_product
         mappings = [mapping for mapping in mappings if getattr(mapping, "is_active", True)]
         crawler = self.registry.get(competitor_id)
@@ -132,7 +205,7 @@ class CrawlJobService:
                 result = await crawler.crawl_product(mapping)
                 await price_service.record(CreateCompetitorPriceSchema(
                     competitor_product_id=mapping.competitor_product_id,
-                    crawl_job_id=created.job_id,
+                    crawl_job_id=job_id,
                     competitor_price=result.price,
                     stock_qty=result.stock_qty,
                     in_stock=result.in_stock,
@@ -157,11 +230,18 @@ class CrawlJobService:
                 logger.exception("Competitor mapping crawl failed", exc_info=exc)
 
         if successes:
-            return self.complete(created.job_id, records_collected=successes)
+            return self.complete(job_id, records_collected=successes)
         detail = "; ".join(failures) if failures else "No active competitor-product mappings"
-        job = self._get_model(created.job_id)
+        job = self._get_model(job_id)
         job.records_collected = 0
-        return self.fail(created.job_id, error_message=detail[:2000])
+        return self.fail(job_id, error_message=detail[:2000])
+
+    def _fail_safely(self, job_id: UUID, message: str) -> CrawlJobPublic:
+        job = self._get_model(job_id)
+        status = getattr(job.status, "value", job.status)
+        if status in {"pending", "running"}:
+            return self.fail(job_id, error_message=(message.strip() or "Worker failure")[:2000])
+        return CrawlJobPublic.model_validate(job)
 
     def _record_mapping_error(self, mapping, message: str) -> None:
         try:
@@ -188,6 +268,9 @@ class CrawlJobService:
         except IntegrityError as exc:
             self.db.rollback()
             raise CrawlJobConflictError("Crawl job could not be updated") from exc
+        except Exception:
+            self.db.rollback()
+            raise
         return CrawlJobPublic.model_validate(job)
 
     def _get_model(self, job_id: UUID) -> CrawlJob:
