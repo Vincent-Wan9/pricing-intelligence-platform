@@ -49,7 +49,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     from app.services.competitor_price_service import CompetitorPriceConflictError, CompetitorPriceNotFoundError, CompetitorPriceValidationError
     from app.services.competitor_product_service import CompetitorProductConflictError, CompetitorProductNotFoundError, CompetitorProductValidationError
     from app.services.competitor_service import CompetitorConflictError, CompetitorNotFoundError, CompetitorValidationError
-    from app.services.crawl_job_service import CrawlJobConflictError, CrawlJobNotFoundError, CrawlJobValidationError
+    from app.services.crawl_job_service import CrawlJobConflictError, CrawlJobEnqueueError, CrawlJobNotFoundError, CrawlJobValidationError
     from app.services.demand_forecast_service import DemandForecastConflictError, DemandForecastNotFoundError, DemandForecastValidationError
     from app.services.inventory_service import InventoryConflictError, InventoryNotFoundError, InventoryValidationError
     from app.services.price_recommendation_service import PriceRecommendationConflictError, PriceRecommendationNotFoundError, PriceRecommendationValidationError
@@ -62,6 +62,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         status.HTTP_403_FORBIDDEN: (AuthorizationError, ProductAuthorizationError, UserAuthorizationError),
         status.HTTP_404_NOT_FOUND: (ResourceNotFoundError, ProductNotFoundError, CategoryNotFoundError, CompetitorNotFoundError, CompetitorProductNotFoundError, CompetitorPriceNotFoundError, CrawlJobNotFoundError, DemandForecastNotFoundError, InventoryNotFoundError, PriceRecommendationNotFoundError, PricingRuleNotFoundError, UserNotFoundError),
         status.HTTP_409_CONFLICT: (ConflictError, ProductConflictError, CategoryConflictError, CompetitorConflictError, CompetitorProductConflictError, CompetitorPriceConflictError, CrawlJobConflictError, DemandForecastConflictError, InventoryConflictError, PriceRecommendationConflictError, PricingRuleConflictError, UserConflictError),
+        status.HTTP_503_SERVICE_UNAVAILABLE: (CrawlJobEnqueueError,),
     }
     for status_code, exception_types in mappings.items():
         async def handler(request: Request, exc: Exception, code: int = status_code) -> JSONResponse:
