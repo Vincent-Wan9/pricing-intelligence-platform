@@ -48,6 +48,9 @@ class Product(Base):
     product_price_history: Mapped[list["ProductPriceHistory"]] = relationship("ProductPriceHistory", back_populates="product", cascade="all, delete-orphan")
     pricing_rule: Mapped["PricingRule"] = relationship("PricingRule")
     demand_forecast: Mapped[list["DemandForecast"]] = relationship("DemandForecast", back_populates="product")
+    demand_history: Mapped[list["DemandHistory"]] = relationship(
+        "DemandHistory", back_populates="product", cascade="all, delete-orphan"
+    )
 
     price_recommendation: Mapped[list["PriceRecommendation"]] = relationship("PriceRecommendation", back_populates="product", cascade="all, delete-orphan")
 

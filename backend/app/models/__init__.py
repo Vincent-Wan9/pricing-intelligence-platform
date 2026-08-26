@@ -5,6 +5,7 @@ from .competitor_product import CompetitorProduct
 from .competitor import Competitor
 from .crawl_job import CrawlJob
 from .demand_forecast import DemandForecast
+from .demand_history import DemandHistory
 from .inventory import Inventory
 from .price_recommendation import PriceRecommendation
 from .pricing_rule import PricingRule
