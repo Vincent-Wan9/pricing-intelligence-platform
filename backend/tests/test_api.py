@@ -172,19 +172,22 @@ def test_non_admin_blocked_from_user_administration(app, client):
     assert client.get("/users").status_code == 403
 
 
-@pytest.mark.parametrize(("role", "expected"), [("viewer", 403), ("editor", 201), ("admin", 201)])
+@pytest.mark.parametrize(("role", "expected"), [("viewer", 403), ("editor", 202), ("admin", 202)])
 def test_crawl_trigger_authorization(app, client, role, expected):
     competitor_id, job_id = uuid4(), uuid4()
     service = MagicMock()
-    service.crawl_competitor = AsyncMock(return_value={
-        "job_id": job_id, "competitor_id": competitor_id, "status": "completed",
-        "started_at": datetime.now(timezone.utc), "completed_at": datetime.now(timezone.utc),
-        "records_collected": 1, "error_message": None,
-    })
+    service.enqueue_competitor.return_value = ({
+        "job_id": job_id, "competitor_id": competitor_id, "status": "pending",
+        "started_at": None, "completed_at": None,
+        "records_collected": 0, "error_message": None,
+    }, True)
     app.dependency_overrides[get_crawl_job_service] = lambda: service
     app.dependency_overrides[get_current_user] = lambda: user(role)
     response = client.post(f"/crawl-jobs/competitors/{competitor_id}")
     assert response.status_code == expected
+    if expected == 202:
+        assert response.json()["status"] == "pending"
+        service.enqueue_competitor.assert_called_once_with(competitor_id)
 
 
 @pytest.mark.parametrize("exception,status_code", [(ProductNotFoundError("Product not found"),404)])
