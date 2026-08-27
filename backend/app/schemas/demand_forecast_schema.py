@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
 from uuid import UUID
@@ -42,3 +42,25 @@ class DemandForecastPublic(DemandForecastBase):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CreateDemandHistorySchema(BaseModel):
+    product_id: UUID
+    demand_date: date
+    quantity: int = Field(..., ge=0)
+
+
+class DemandHistoryPublic(CreateDemandHistorySchema):
+    demand_history_id: UUID
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ForecastGenerationResult(BaseModel):
+    product_id: UUID
+    horizon_days: int
+    model_name: str
+    baseline_mae: float
+    ml_mae: float
+    forecasts: list[DemandForecastPublic]

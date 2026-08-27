@@ -14,7 +14,7 @@ class DemandForecastCRUD(CRUDBase[DemandForecast, CreateDemandForecastSchema, Up
 
     def get_latest_forecast(self, db: Session, product_id: UUID):
         stmt = (select(DemandForecast).where(DemandForecast.product_id == product_id)
-            .order_by(DemandForecast.forecast_date.desc())
+            .order_by(DemandForecast.created_at.desc(), DemandForecast.forecast_date.asc())
             .limit(1))
 
         return db.scalar(stmt)

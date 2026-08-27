@@ -1,12 +1,26 @@
 from datetime import datetime
 from uuid import UUID
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Query, Response
 from app.dependencies import DemandForecastServiceDep, require_roles
-from app.schemas.demand_forecast_schema import CreateDemandForecastSchema, DemandForecastPublic, UpdateDemandForecastSchema
+from app.schemas.demand_forecast_schema import (
+    CreateDemandForecastSchema, CreateDemandHistorySchema, DemandForecastPublic,
+    DemandHistoryPublic, ForecastGenerationResult, UpdateDemandForecastSchema,
+)
 
 router = APIRouter(prefix = "/demand-forecasts", tags = ["demand forecasts"])
 read = Depends(require_roles("viewer", "editor", "approver", "admin"))
 write = Depends(require_roles("editor", "admin"))
+
+
+@router.post("/history", response_model=DemandHistoryPublic, status_code=201, dependencies=[write])
+def record_history(data: CreateDemandHistorySchema, service: DemandForecastServiceDep):
+    return service.record_demand(data)
+
+
+@router.post("/generate/{product_id}", response_model=ForecastGenerationResult, status_code=201, dependencies=[write])
+def generate(product_id: UUID, service: DemandForecastServiceDep,
+             horizon_days: int = Query(7, ge=1, le=90)):
+    return service.generate(product_id, horizon_days=horizon_days)
 
 
 @router.get("/{forecast_id}", response_model = DemandForecastPublic, dependencies = [read])
