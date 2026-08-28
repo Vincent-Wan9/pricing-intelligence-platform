@@ -105,7 +105,7 @@ class PriceRecommendationService:
         inventory = self.db.scalar(select(Inventory).where(Inventory.product_id == product_id))
         forecast = self.db.scalar(select(DemandForecast).where(
             DemandForecast.product_id == product_id
-        ).order_by(DemandForecast.forecast_date.desc()).limit(1))
+        ).order_by(DemandForecast.created_at.desc(), DemandForecast.forecast_date.asc()).limit(1))
         competitor_prices = self._latest_competitor_prices(product_id)
         price, reason = self.evaluate_rule(
             rule, product=product, inventory=inventory,
@@ -181,6 +181,8 @@ class PriceRecommendationService:
             constraints.append("maximum price")
         price = candidate.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         self._validate_price(product, price)
+        if forecast is not None and rule_type != RuleType.DEMAND_BASED.value:
+            detail += f"; latest demand forecast {forecast.predicted_demand} units"
         suffix = f"; constrained by {', '.join(constraints)}" if constraints else ""
         return price, f"{rule.rule_name} ({rule_type}): {detail}{suffix}."
 

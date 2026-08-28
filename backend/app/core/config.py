@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     celery_broker_url: str = "redis://localhost:6379/1"
     celery_result_backend: str = "redis://localhost:6379/1"
     competitor_crawl_schedule_seconds: int = 21600
+    demand_forecast_schedule_seconds: int = 86400
+    demand_forecast_default_horizon_days: int = 7
+    demand_forecast_min_history_days: int = 21
     celery_task_always_eager: bool = False
 
     crawler_timeout_seconds: float = 10.0
