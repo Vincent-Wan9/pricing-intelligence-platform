@@ -7,7 +7,7 @@ celery_app = Celery(
     "pricing_intelligence",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
-    include=["app.tasks.crawl_tasks"],
+    include=["app.tasks.crawl_tasks", "app.tasks.forecast_tasks"],
 )
 celery_app.conf.update(
     task_serializer="json",
@@ -22,6 +22,9 @@ celery_app.conf.update(
             "task": "app.tasks.enqueue_scheduled_competitor_crawls",
             "schedule": settings.competitor_crawl_schedule_seconds,
         },
+        "refresh-demand-forecasts": {
+            "task": "app.tasks.refresh_demand_forecasts",
+            "schedule": settings.demand_forecast_schedule_seconds,
+        },
     },
 )
-
