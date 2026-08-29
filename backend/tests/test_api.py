@@ -8,7 +8,7 @@ from uuid import uuid4
 
 import pytest
 import anyio.to_thread
-from app.dependencies import get_auth_service, get_crawl_job_service, get_current_user, get_price_recommendation_service, get_product_service, get_user_service
+from app.dependencies import get_auth_service, get_crawl_job_service, get_current_user, get_demand_forecast_service, get_price_recommendation_service, get_product_service, get_user_service
 from app.main import create_app
 from app.core.config import settings
 from app.services import ProductNotFoundError
@@ -188,6 +188,30 @@ def test_crawl_trigger_authorization(app, client, role, expected):
     if expected == 202:
         assert response.json()["status"] == "pending"
         service.enqueue_competitor.assert_called_once_with(competitor_id)
+
+
+def test_generate_demand_forecast_endpoint(app, client):
+    product_id, forecast_id = uuid4(), uuid4()
+    generated_at = datetime.now(timezone.utc)
+    service = MagicMock()
+    service.generate.return_value = {
+        "product_id": product_id, "horizon_days": 7, "model_name": "ridge-lag-v1",
+        "baseline_mae": 3.2, "ml_mae": 2.1,
+        "forecasts": [{
+            "forecast_id": forecast_id, "product_id": product_id,
+            "forecast_date": generated_at, "predicted_demand": 25,
+            "model_name": "ridge-lag-v1", "confidence_score": "90.00",
+            "created_at": generated_at,
+        }],
+    }
+    app.dependency_overrides[get_demand_forecast_service] = lambda: service
+    app.dependency_overrides[get_current_user] = lambda: user("editor")
+
+    response = client.post(f"/demand-forecasts/generate/{product_id}?horizon_days=7")
+
+    assert response.status_code == 201
+    assert response.json()["model_name"] == "ridge-lag-v1"
+    service.generate.assert_called_once_with(product_id, horizon_days=7)
 
 
 @pytest.mark.parametrize("exception,status_code", [(ProductNotFoundError("Product not found"),404)])

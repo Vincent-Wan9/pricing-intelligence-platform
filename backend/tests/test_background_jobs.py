@@ -15,6 +15,7 @@ from app.services.crawl_job_service import (
 )
 from app.tasks.celery_app import celery_app
 from app.tasks import crawl_tasks
+from app.tasks import forecast_tasks
 
 
 def public_job(competitor_id, job_id=None, status="pending"):
@@ -165,4 +166,25 @@ def test_scheduler_enqueues_jobs_without_executing_crawler(monkeypatch):
 
     assert result == {"competitors": 2, "enqueued": 1, "failures": 0}
     assert enqueue.call_count == 2
+    db.close.assert_called_once()
+
+
+def test_forecast_beat_schedule_and_per_product_failure_isolation(monkeypatch):
+    entry = celery_app.conf.beat_schedule["refresh-demand-forecasts"]
+    assert entry["task"] == "app.tasks.refresh_demand_forecasts"
+
+    product_ids = [uuid4(), uuid4()]
+    db = MagicMock()
+    db.scalars.return_value.all.return_value = product_ids
+    generate = MagicMock(side_effect=[SimpleNamespace(), RuntimeError("training failed")])
+    monkeypatch.setattr(forecast_tasks, "SessionLocal", MagicMock(return_value=db))
+    monkeypatch.setattr(forecast_tasks, "DemandForecastService", MagicMock(
+        return_value=SimpleNamespace(generate=generate)
+    ))
+
+    result = forecast_tasks.refresh_demand_forecasts.run()
+
+    assert result == {"products": 2, "generated": 1, "failures": 1}
+    assert generate.call_count == 2
+    db.rollback.assert_called_once()
     db.close.assert_called_once()

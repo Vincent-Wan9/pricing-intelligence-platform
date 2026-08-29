@@ -8,6 +8,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from app.models.inventory import Inventory
+from app.models.demand_forecast import DemandForecast
 from app.models.price_recommendation import PriceRecommendation
 from app.models.pricing_rule import PricingRule, RuleType
 from app.models.product import Product
@@ -65,6 +66,19 @@ def test_cost_plus_evaluation_respects_margin_and_bounds() -> None:
     )
     assert price == Decimal("15.00")
     assert "target margin" in reason
+
+
+def test_pricing_workflow_consumes_latest_demand_forecast_context() -> None:
+    item = product()
+    forecast = DemandForecast(
+        product_id=item.product_id, forecast_date=datetime.now(timezone.utc),
+        predicted_demand=42, model_name="ridge-lag-v1",
+    )
+    _, reason = PriceRecommendationService(MagicMock()).evaluate_rule(
+        rule(), product=item, inventory=inventory(item), forecast=forecast, competitor_prices=[]
+    )
+
+    assert "latest demand forecast 42 units" in reason
 
 
 def test_competitor_rule_requires_prices() -> None:
