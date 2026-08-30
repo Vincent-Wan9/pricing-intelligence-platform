@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 from collections.abc import Callable
@@ -147,7 +149,9 @@ class CrawlJobService:
         job.started_at = datetime.now(timezone.utc)
         return self._save(job)
 
-    def complete(self, job_id: UUID, *, records_collected: int) -> CrawlJobPublic:
+    def complete(
+        self, job_id: UUID, *, records_collected: int, error_message: str | None = None
+    ) -> CrawlJobPublic:
         if records_collected < 0:
             raise CrawlJobValidationError(
                 "records_collected cannot be negative")
@@ -155,7 +159,7 @@ class CrawlJobService:
         self._transition(job, "completed")
         job.records_collected = records_collected
         job.completed_at = datetime.now(timezone.utc)
-        job.error_message = None
+        job.error_message = error_message[:2000] if error_message else None
         return self._save(job)
 
     def fail(self, job_id: UUID, *, error_message: str) -> CrawlJobPublic:
@@ -196,41 +200,64 @@ class CrawlJobService:
         crawler = self.registry.get(competitor_id)
         price_service = CompetitorPriceService(self.db)
         successes = 0
+        records_collected = 0
         failures: list[str] = []
 
-        for index, mapping in enumerate(mappings):
-            if index and self.request_delay_seconds > 0:
-                await asyncio.sleep(self.request_delay_seconds)
-            try:
-                result = await crawler.crawl_product(mapping)
-                await price_service.record(CreateCompetitorPriceSchema(
-                    competitor_product_id=mapping.competitor_product_id,
-                    crawl_job_id=job_id,
-                    competitor_price=result.price,
-                    stock_qty=result.stock_qty,
-                    in_stock=result.in_stock,
-                    crawl_timestamp=datetime.now(timezone.utc),
-                ))
-                successes += 1
-                if self.cache is not None:
-                    await self.cache.invalidate_price_inputs(
-                        product_id=mapping.product_id,
-                        competitor_id=competitor_id,
-                        mapping_id=mapping.competitor_product_id,
+        try:
+            await crawler.start()
+            for index, mapping in enumerate(mappings):
+                if index and self.request_delay_seconds > 0:
+                    await asyncio.sleep(self.request_delay_seconds)
+                try:
+                    result = await crawler.crawl_product(mapping)
+                    recorded = await price_service.record(CreateCompetitorPriceSchema(
+                        competitor_product_id=mapping.competitor_product_id,
+                        crawl_job_id=job_id,
+                        competitor_price=result.price,
+                        stock_qty=result.stock_qty,
+                        in_stock=result.in_stock,
+                        crawl_timestamp=datetime.now(timezone.utc),
+                    ), skip_unchanged=True)
+                    successes += 1
+                    records_collected += int(recorded is not None)
+                    logger.info(
+                        "crawler_mapping_succeeded competitor_id=%s mapping_id=%s product_id=%s recorded=%s",
+                        competitor_id, mapping.competitor_product_id, mapping.product_id, recorded is not None,
                     )
-            except (CrawlerError, CompetitorPriceConflictError) as exc:
-                message = f"{mapping.competitor_product_id}: {exc}"
-                failures.append(message)
-                self._record_mapping_error(mapping, str(exc))
-                logger.warning("Competitor mapping crawl failed: %s", message)
-            except Exception as exc:
-                message = f"{mapping.competitor_product_id}: unexpected crawler failure"
-                failures.append(message)
-                self._record_mapping_error(mapping, "Unexpected crawler failure")
-                logger.exception("Competitor mapping crawl failed", exc_info=exc)
+                    if self.cache is not None and recorded is not None:
+                        await self.cache.invalidate_price_inputs(
+                            product_id=mapping.product_id,
+                            competitor_id=competitor_id,
+                            mapping_id=mapping.competitor_product_id,
+                        )
+                except (CrawlerError, CompetitorPriceConflictError) as exc:
+                    failure_type = exc.__class__.__name__
+                    message = f"{mapping.competitor_product_id} [{failure_type}]: {exc}"
+                    failures.append(message)
+                    self._record_mapping_error(mapping, f"{failure_type}: {exc}")
+                    logger.warning(
+                        "crawler_mapping_failed competitor_id=%s mapping_id=%s product_id=%s failure_type=%s error=%s",
+                        competitor_id, mapping.competitor_product_id, mapping.product_id, failure_type, exc,
+                    )
+                except Exception:
+                    message = f"{mapping.competitor_product_id} [unexpected crawler error]"
+                    failures.append(message)
+                    self._record_mapping_error(mapping, "Unexpected crawler error")
+                    logger.exception(
+                        "crawler_mapping_failed competitor_id=%s mapping_id=%s product_id=%s failure_type=unexpected",
+                        competitor_id, mapping.competitor_product_id, mapping.product_id,
+                    )
+        finally:
+            try:
+                await crawler.close()
+            except Exception:
+                logger.exception("crawler_cleanup_failed competitor_id=%s job_id=%s", competitor_id, job_id)
 
         if successes:
-            return self.complete(job_id, records_collected=successes)
+            warnings = ("Partial failures: " + "; ".join(failures)) if failures else None
+            return self.complete(
+                job_id, records_collected=records_collected, error_message=warnings
+            )
         detail = "; ".join(failures) if failures else "No active competitor-product mappings"
         job = self._get_model(job_id)
         job.records_collected = 0

@@ -8,6 +8,7 @@ class CompetitorProductBase(BaseModel):
     competitor_sku: str = Field(..., max_length=100)
     competitor_product_name: str = Field(..., max_length=255)
     competitor_product_url: HttpUrl = Field(...)
+    price_selector: str | None = Field(None, min_length=1, max_length=500)
     is_active: bool = True
 
 
@@ -20,6 +21,7 @@ class UpdateCompetitorProductSchema(BaseModel):
     competitor_sku: Optional[str] = Field(None, max_length=100)
     competitor_product_name: Optional[str] = Field(None, max_length=255)
     competitor_product_url: Optional[HttpUrl] = Field(None)
+    price_selector: Optional[str] = Field(None, min_length=1, max_length=500)
     is_active: Optional[bool] = None
 
 

@@ -25,10 +25,11 @@ class Settings(BaseSettings):
     celery_task_always_eager: bool = False
 
     crawler_timeout_seconds: float = 10.0
+    crawler_selector_timeout_seconds: float = 8.0
     crawler_max_retries: int = 2
     crawler_retry_backoff_seconds: float = 0.25
     crawler_request_delay_seconds: float = 0.1
-    crawler_user_agent: str = "PricingIntelligenceBot/1.0 (+public product price monitoring)"
+    crawler_user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 
     jwt_algorithm: str
     jwt_secret_key: str

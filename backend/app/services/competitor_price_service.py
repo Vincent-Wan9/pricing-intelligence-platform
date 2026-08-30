@@ -46,9 +46,24 @@ class CompetitorPriceService:
             )
         return CompetitorPricePublic.model_validate(record)
 
-    async def record(self, price_in: CreateCompetitorPriceSchema) -> CompetitorPricePublic:
+    async def record(
+        self, price_in: CreateCompetitorPriceSchema, *, skip_unchanged: bool = False
+    ) -> CompetitorPricePublic | None:
         mapping = self._validate_mapping(price_in.competitor_product_id)
         self._validate_price(price_in.competitor_price)
+
+        if skip_unchanged:
+            latest = self.crud.get_latest_price(self.db, price_in.competitor_product_id)
+            if latest is not None and self._same_observation(latest, price_in):
+                mapping.last_crawled_at = price_in.crawl_timestamp
+                mapping.last_crawl_error = None
+                try:
+                    self.db.add(mapping)
+                    self.db.commit()
+                except Exception:
+                    self.db.rollback()
+                    raise
+                return None
 
         record = CompetitorPrice(**price_in.model_dump())
         try:
@@ -134,6 +149,14 @@ class CompetitorPriceService:
 
     @staticmethod
     def _validate_price(price: Decimal) -> None:
-        if price <= Decimal("0"):
+        if not price.is_finite() or price <= Decimal("0"):
             raise CompetitorPriceValidationError(
                 "competitor_price must be greater than zero")
+
+    @staticmethod
+    def _same_observation(latest: CompetitorPrice, incoming: CreateCompetitorPriceSchema) -> bool:
+        return (
+            latest.competitor_price == incoming.competitor_price
+            and latest.stock_qty == incoming.stock_qty
+            and latest.in_stock == incoming.in_stock
+        )
