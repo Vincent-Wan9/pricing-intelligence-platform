@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import re
-from decimal import Decimal, InvalidOperation
 from html.parser import HTMLParser
 
 from app.crawlers.base import CrawledProduct, CrawlerParseError
+from app.crawlers.price_parser import parse_price_text
 
 
 class _MetadataParser(HTMLParser):
@@ -35,11 +34,7 @@ class SimpleHtmlProductParser:
         raw_price = next((parser.values[key] for key in self.PRICE_KEYS if parser.values.get(key)), None)
         if raw_price is None:
             raise CrawlerParseError("Product page did not contain supported price metadata")
-        normalized = re.sub(r"[^0-9.,-]", "", raw_price).replace(",", "")
-        try:
-            price = Decimal(normalized)
-        except (InvalidOperation, ValueError) as exc:
-            raise CrawlerParseError("Product page contained an invalid price") from exc
+        price = parse_price_text(raw_price)
         currency = next((parser.values[key] for key in self.CURRENCY_KEYS if parser.values.get(key)), "USD")
         raw_stock = parser.values.get("data-in-stock")
         in_stock = None if raw_stock is None else raw_stock.strip().lower() in {"1", "true", "yes", "in_stock", "instock"}

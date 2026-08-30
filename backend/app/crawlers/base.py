@@ -15,11 +15,27 @@ class CrawlerFetchError(CrawlerError):
     pass
 
 
+class CrawlerNavigationTimeoutError(CrawlerFetchError):
+    pass
+
+
+class CrawlerHttpError(CrawlerFetchError):
+    pass
+
+
 class CrawlerNotFoundError(CrawlerFetchError):
     pass
 
 
 class CrawlerParseError(CrawlerError):
+    pass
+
+
+class CrawlerSelectorNotFoundError(CrawlerParseError):
+    pass
+
+
+class CrawlerInvalidPriceError(CrawlerParseError):
     pass
 
 
@@ -41,6 +57,12 @@ class CrawledProduct:
 
 
 class BaseCompetitorCrawler(ABC):
+    async def start(self) -> None:
+        """Allocate job-scoped resources when required by an adapter."""
+
+    async def close(self) -> None:
+        """Release job-scoped resources when required by an adapter."""
+
     @abstractmethod
     async def fetch_product(self, mapping: CompetitorProduct) -> str:
         raise NotImplementedError
