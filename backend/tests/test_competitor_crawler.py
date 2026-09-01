@@ -17,6 +17,7 @@ from app.crawlers.base import (
     CrawlerParseError,
 )
 from app.crawlers.http_client import CrawlerHttpClient
+from app.crawlers.price_parser import parse_price_text
 from app.crawlers.parsers import SimpleHtmlProductParser
 from app.crawlers.registry import CrawlerRegistry
 from app.models.competitor_price import CompetitorPrice
@@ -32,6 +33,7 @@ def mapping(*, active=True):
         competitor_product_id=uuid4(), product_id=uuid4(), competitor_id=uuid4(),
         competitor_sku="EXT-1", competitor_product_name="External product",
         competitor_product_url="https://shop.example/products/1", is_active=active,
+        price_selector=".product-price",
         created_at=datetime.now(timezone.utc),
     )
 
@@ -72,6 +74,20 @@ def test_crawled_product_rejects_currency_and_non_positive_price():
         CrawledProduct(Decimal("10"), currency="EUR").validate()
     with pytest.raises(CrawlerParseError, match="greater than zero"):
         CrawledProduct(Decimal("0")).validate()
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [("$1,299.95", Decimal("1299.95")), ("€ 1.299,95", Decimal("1299.95")), ("19,95", Decimal("19.95"))],
+)
+def test_price_text_normalizes_currency_and_decimal_formats(raw, expected):
+    assert parse_price_text(raw) == expected
+
+
+@pytest.mark.parametrize("raw", ["not available", "$0.00", "-"])
+def test_price_text_rejects_malformed_or_zero_values(raw):
+    with pytest.raises(CrawlerParseError):
+        parse_price_text(raw)
 
 
 def test_http_client_success_and_user_agent():
@@ -164,7 +180,7 @@ def orchestrator(outcomes, mappings):
     job_id = uuid4()
     service.create = MagicMock(return_value=_job_result(competitor_id, job_id, "pending"))
     service.start = MagicMock(return_value=_job_result(competitor_id, job_id, "running"))
-    service.complete = MagicMock(side_effect=lambda _, records_collected: _job_result(competitor_id, job_id, "completed", records_collected))
+    service.complete = MagicMock(side_effect=lambda _, records_collected, error_message=None: _job_result(competitor_id, job_id, "completed", records_collected, error_message))
     service.fail = MagicMock(side_effect=lambda _, error_message: _job_result(competitor_id, job_id, "failed", error=error_message))
     return service, cache, competitor_id
 
@@ -178,6 +194,7 @@ def test_partial_failure_completes_and_preserves_success(monkeypatch):
     result = asyncio.run(service.crawl_competitor(competitor_id))
     assert result.status == "completed"
     assert result.records_collected == 1
+    assert "Partial failures" in result.error_message
     record.assert_awaited_once()
     cache.invalidate_price_inputs.assert_awaited_once()
 
@@ -215,3 +232,28 @@ def test_price_duplicate_conflict_rolls_back_and_unique_constraint_exists():
     with pytest.raises(CompetitorPriceConflictError):
         asyncio.run(CompetitorPriceService(db).record(data))
     db.rollback.assert_called_once()
+
+
+def test_unchanged_price_updates_mapping_without_inserting_duplicate():
+    item = mapping()
+    latest = SimpleNamespace(
+        competitor_price=Decimal("12.50"), stock_qty=4, in_stock=True
+    )
+    db = MagicMock()
+    db.get.return_value = item
+    db.scalar.return_value = latest
+    observed_at = datetime.now(timezone.utc)
+    data = CreateCompetitorPriceSchema(
+        competitor_product_id=item.competitor_product_id,
+        crawl_job_id=uuid4(),
+        competitor_price=Decimal("12.50"),
+        stock_qty=4,
+        in_stock=True,
+        crawl_timestamp=observed_at,
+    )
+    result = asyncio.run(CompetitorPriceService(db).record(data, skip_unchanged=True))
+    assert result is None
+    assert item.last_crawled_at == observed_at
+    assert item.last_crawl_error is None
+    db.commit.assert_called_once()
+    db.refresh.assert_not_called()
