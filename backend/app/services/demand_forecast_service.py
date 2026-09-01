@@ -77,6 +77,17 @@ class DemandForecastService:
             raise DemandForecastConflictError("Historical demand could not be recorded") from exc
         return DemandHistoryPublic.model_validate(observation)
 
+    def get_demand_history(self, product_id: UUID, *, limit: int = 365) -> list[DemandHistoryPublic]:
+        self._validate_product(product_id, require_active=False)
+        observations = list(self.db.scalars(
+            select(DemandHistory)
+            .where(DemandHistory.product_id == product_id)
+            .order_by(DemandHistory.demand_date.desc())
+            .limit(limit)
+        ).all())
+        observations.reverse()
+        return [DemandHistoryPublic.model_validate(item) for item in observations]
+
     def generate(self, product_id: UUID, *, horizon_days: int | None = None) -> ForecastGenerationResult:
         """Evaluate baseline and ridge models, select the lower-MAE method, and persist forecasts."""
         self._validate_product(product_id)

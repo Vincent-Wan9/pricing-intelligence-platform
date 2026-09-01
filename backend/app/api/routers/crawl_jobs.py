@@ -1,11 +1,29 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import select
 from app.dependencies import CrawlJobServiceDep, require_roles
-from app.schemas.crawl_job_schema import CompleteCrawlJobSchema, CrawlJobPublic, CreateCrawlJobSchema, FailCrawlJobSchema
+from app.core.config import settings
+from app.models.crawl_job import CrawlJob
+from app.schemas.crawl_job_schema import CompleteCrawlJobSchema, CrawlJobPublic, CrawlSchedulePublic, CreateCrawlJobSchema, FailCrawlJobSchema
 
 router=APIRouter(prefix = "/crawl-jobs", tags = ["crawl jobs"])
 read=Depends(require_roles("viewer", "editor", "approver", "admin"))
 write=Depends(require_roles("editor", "admin"))
+
+
+@router.get("/schedule/status", response_model=CrawlSchedulePublic, dependencies=[read])
+def schedule_status(service: CrawlJobServiceDep):
+    latest = service.db.scalar(
+        select(CrawlJob).where(CrawlJob.completed_at.is_not(None))
+        .order_by(CrawlJob.completed_at.desc()).limit(1)
+    )
+    return CrawlSchedulePublic(
+        enabled=settings.competitor_crawl_schedule_seconds > 0,
+        interval_seconds=settings.competitor_crawl_schedule_seconds,
+        last_crawl_at=latest.completed_at if latest else None,
+        # Celery Beat does not persist its next tick in this application.
+        next_scheduled_crawl=None,
+    )
 
 
 @router.get("", response_model = list[CrawlJobPublic], dependencies = [read])

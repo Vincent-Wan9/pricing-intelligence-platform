@@ -31,3 +31,10 @@ class CompleteCrawlJobSchema(BaseModel):
 
 class FailCrawlJobSchema(BaseModel):
     error_message: str = Field(min_length=1)
+
+
+class CrawlSchedulePublic(BaseModel):
+    enabled: bool
+    interval_seconds: int = Field(gt=0)
+    last_crawl_at: Optional[datetime] = None
+    next_scheduled_crawl: Optional[datetime] = None

@@ -17,6 +17,12 @@ def record_history(data: CreateDemandHistorySchema, service: DemandForecastServi
     return service.record_demand(data)
 
 
+@router.get("/history/product/{product_id}", response_model=list[DemandHistoryPublic], dependencies=[read])
+def demand_history(product_id: UUID, service: DemandForecastServiceDep,
+                   limit: int = Query(365, ge=1, le=2000)):
+    return service.get_demand_history(product_id, limit=limit)
+
+
 @router.post("/generate/{product_id}", response_model=ForecastGenerationResult, status_code=201, dependencies=[write])
 def generate(product_id: UUID, service: DemandForecastServiceDep,
              horizon_days: int = Query(7, ge=1, le=90)):
