@@ -38,7 +38,7 @@ class AuthService:
         user = (
             self.user_crud.get_by_email(self.db, credentials.email)
             if "@" in credentials.email
-            else self.user_crud.get_by_username(self.db, credentials.email)
+            else self.user_crud.get_by_username(self.db, credentials.username)
         )
         if user is None or not verify_password(credentials.password, user.hashed_password):
             raise InvalidCredentialsError("Invalid email or password")
