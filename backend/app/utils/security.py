@@ -15,18 +15,20 @@ class TokenError(Exception):
     """Raised when JWT validation fails."""
 
 
-def hash_password(password: str):
-
+def hash_password(password: str) -> str:
+    """Hash a password using the recommended password hashing algorithm."""
     return password_hash.hash(password)
 
 
-def verify_password(plain_password: str, hashed_password: str):
-
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against its stored hash."""
     return password_hash.verify(password=plain_password, hash=hashed_password)
 
 
-def create_access_token(data: dict[str, Any], expiration: timedelta | None = None):
-
+def create_access_token(
+    data: dict[str, Any], expiration: timedelta | None = None
+) -> str:
+    """Sign claims with server-controlled issued-at and expiration timestamps."""
     now = datetime.now(timezone.utc)
 
     if expiration is None:
@@ -45,14 +47,14 @@ def create_access_token(data: dict[str, Any], expiration: timedelta | None = Non
     )
 
 
-def decode_access_token(token: str):
-
+def decode_access_token(token: str) -> dict[str, Any]:
+    """Validate a signed token and required claims, raising TokenError on failure."""
     try:
         return jwt.decode(
             token,
             settings.jwt_secret_key,
             algorithms=[settings.jwt_algorithm],
-            options={"require": ["exp", "iat", "sub"]}
+            options={"require": ["exp", "iat", "sub"]},
         )
 
     except ExpiredSignatureError as exc:

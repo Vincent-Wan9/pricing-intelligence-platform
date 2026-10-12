@@ -1,42 +1,46 @@
+from typing import Literal
+from uuid import uuid4
+
 from slugify import slugify
-from sqlalchemy.orm import Session
 from sqlalchemy import select
-from app.models.product import Product
+from sqlalchemy.orm import Session
+
 from app.models.category import Category
-from typing import Literal, Set
-import uuid
+from app.models.product import Product
 
 SlugContext = Literal["product", "category"]
 
 
 def generate_slug(db: Session, name: str, context: SlugContext) -> str:
-    """
-    Generates a unique slug for a given name and context (model).
+    """Return an available slug within the model's column length.
+
+    Availability is checked in the current session; concurrent writes still
+    require a database uniqueness constraint and conflict handling by callers.
     """
     if context == "product":
-        Model = Product
+        model = Product
     elif context == "category":
-        Model = Category
+        model = Category
     else:
         raise ValueError(f"Invalid slug context: {context}")
 
-    base_slug = slugify(name, lowercase=True)
+    max_length = model.__table__.c.slug.type.length
+    base_slug = (slugify(name, lowercase=True) or context)[:max_length].rstrip("-")
 
-    stmt = select(Model.slug).where(Model.slug.like(f"{base_slug}%"))
-    existing_slugs: Set[str] = set(db.scalars(stmt).all())
-
-    if base_slug not in existing_slugs:
-        return base_slug
-
-    counter = 1
-    while f"{base_slug}-{counter}" in existing_slugs:
+    candidate = base_slug
+    counter = 0
+    while db.scalar(select(model.slug).where(model.slug == candidate)) is not None:
         counter += 1
+        suffix = f"-{counter}"
+        if len(suffix) >= max_length:
+            raise ValueError(f"No available slug for context: {context}")
+        candidate = f"{base_slug[:max_length - len(suffix)].rstrip('-')}{suffix}"
 
-    return f"{base_slug}-{counter}"
+    return candidate
 
 
 def generate_sku(name: str, prefix: str = "PRD") -> str:
-    """Generate SKU from product name + random suffix."""
-    base = slugify(name, separator="", lowercase=False)[:5].upper()
-    unique_part = uuid.uuid4().hex[:4].upper()
+    """Return a SKU candidate; callers must handle database uniqueness conflicts."""
+    base = slugify(name, separator="", lowercase=False)[:5].upper() or "PRD"
+    unique_part = uuid4().hex[:4].upper()
     return f"{prefix}-{base}-{unique_part}"
