@@ -2,5 +2,44 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useApi } from "./useApi";
 
-afterEach(()=>vi.restoreAllMocks());
-describe("useApi polling",()=>{it("polls active resources at the configured interval",async()=>{vi.useFakeTimers({shouldAdvanceTime:true});const fetchMock=vi.spyOn(globalThis,"fetch").mockResolvedValue(new Response(JSON.stringify([{status:"running"}]),{status:200,headers:{"Content-Type":"application/json"}}));const {unmount}=renderHook(()=>useApi("/crawl-jobs",20));await waitFor(()=>expect(fetchMock).toHaveBeenCalled());await vi.advanceTimersByTimeAsync(25);expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2);unmount();vi.useRealTimers();});});
+describe("useApi polling", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it("polls active resources at the configured interval", async () => {
+    // Arrange
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
+    const mockResponse = [
+      { status: "running" },
+    ];
+
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(mockResponse), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+    );
+
+    // Act
+    const { unmount } = renderHook(() => useApi("/crawl-jobs", 20));
+
+    // Wait for the initial API request
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled();
+    });
+
+    // Advance time to trigger polling
+    await vi.advanceTimersByTimeAsync(25);
+
+    // Assert
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    // Cleanup
+    unmount();
+  });
+});
