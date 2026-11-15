@@ -12,9 +12,7 @@ describe("useApi polling", () => {
     // Arrange
     vi.useFakeTimers();
 
-    const mockResponse = [
-      { status: "running" },
-    ];
+    const mockResponse = [{ status: "running" }];
 
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify(mockResponse), {
@@ -22,7 +20,7 @@ describe("useApi polling", () => {
         headers: {
           "Content-Type": "application/json",
         },
-      })
+      }),
     );
 
     // Act

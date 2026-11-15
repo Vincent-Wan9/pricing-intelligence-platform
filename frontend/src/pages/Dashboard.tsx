@@ -1,4 +1,3 @@
-
 import {
   Activity,
   ArrowDownRight,
@@ -28,7 +27,7 @@ export function Dashboard() {
   // Fetch dashboard data
   const products = useApi<Product[]>("/products?limit=1000");
   const recommendations = useApi<Recommendation[]>(
-    "/price-recommendations?limit=1000"
+    "/price-recommendations?limit=1000",
   );
   const competitors = useApi<Competitor[]>("/competitors?limit=1000");
   const jobs = useApi<CrawlJob[]>("/crawl-jobs?limit=1000");
@@ -41,10 +40,7 @@ export function Dashboard() {
     jobs.loading;
 
   const error =
-    products.error ||
-    recommendations.error ||
-    competitors.error ||
-    jobs.error;
+    products.error || recommendations.error || competitors.error || jobs.error;
 
   // Product ID to product name lookup
   const names = useMemo(
@@ -53,9 +49,9 @@ export function Dashboard() {
         (products.data || []).map((product) => [
           product.product_id,
           product.product_name,
-        ])
+        ]),
       ),
-    [products.data]
+    [products.data],
   );
 
   if (loading || error) {
@@ -75,11 +71,11 @@ export function Dashboard() {
 
   // Sort recommendations and crawl jobs by date
   const recs = [...(recommendations.data || [])].sort((a, b) =>
-    b.generated_at.localeCompare(a.generated_at)
+    b.generated_at.localeCompare(a.generated_at),
   );
 
   const recentJobs = [...(jobs.data || [])].sort((a, b) =>
-    (b.started_at || "").localeCompare(a.started_at || "")
+    (b.started_at || "").localeCompare(a.started_at || ""),
   );
 
   return (
@@ -113,7 +109,7 @@ export function Dashboard() {
               (job) =>
                 job.status === "pending" ||
                 job.status === "running" ||
-                job.status === "failed"
+                job.status === "failed",
             ).length
           }
           icon={<Activity />}
@@ -130,7 +126,7 @@ export function Dashboard() {
           label="Tracked competitors"
           value={
             (competitors.data || []).filter(
-              (competitor) => competitor.is_active
+              (competitor) => competitor.is_active,
             ).length
           }
           icon={<Scale />}
@@ -155,10 +151,7 @@ export function Dashboard() {
                 100;
 
               return (
-                <div
-                  className="activity-row"
-                  key={rec.recommendation_id}
-                >
+                <div className="activity-row" key={rec.recommendation_id}>
                   <div className={`trend ${change >= 0 ? "up" : "down"}`}>
                     {change >= 0 ? <ArrowUpRight /> : <ArrowDownRight />}
                   </div>
@@ -180,9 +173,7 @@ export function Dashboard() {
               );
             })}
 
-            {!recs.length && (
-              <PageState empty="No recommendations yet." />
-            )}
+            {!recs.length && <PageState empty="No recommendations yet." />}
           </div>
         </Card>
 
@@ -204,13 +195,12 @@ export function Dashboard() {
                   <strong>
                     {competitors.data?.find(
                       (competitor) =>
-                        competitor.competitor_id === job.competitor_id
+                        competitor.competitor_id === job.competitor_id,
                     )?.competitor_name || "Competitor crawl"}
                   </strong>
 
                   <span>
-                    {job.records_collected} records ·{" "}
-                    {dateTime(job.started_at)}
+                    {job.records_collected} records · {dateTime(job.started_at)}
                   </span>
                 </div>
 
@@ -220,9 +210,7 @@ export function Dashboard() {
               </div>
             ))}
 
-            {!recentJobs.length && (
-              <PageState empty="No crawl jobs yet." />
-            )}
+            {!recentJobs.length && <PageState empty="No crawl jobs yet." />}
           </div>
         </Card>
       </div>
@@ -263,9 +251,7 @@ function RecentChanges({ products }: { products: Product[] }) {
   const first = products[0];
 
   const history = useApi<PriceHistory[]>(
-    first
-      ? `/products/${first.product_id}/price-history?limit=5`
-      : null
+    first ? `/products/${first.product_id}/price-history?limit=5` : null,
   );
 
   return (
@@ -327,9 +313,7 @@ function RecentChanges({ products }: { products: Product[] }) {
 // Latest demand forecast
 function LatestForecast({ product }: { product?: Product }) {
   const forecasts = useApi<DemandForecast[]>(
-    product
-      ? `/demand-forecasts/product/${product.product_id}/history`
-      : null
+    product ? `/demand-forecasts/product/${product.product_id}/history` : null,
   );
 
   const latest = forecasts.data
@@ -357,9 +341,7 @@ function LatestForecast({ product }: { product?: Product }) {
         <div className="forecast-highlight">
           <div>
             <span>Predicted demand</span>
-            <strong>
-              {latest.predicted_demand.toLocaleString()} units
-            </strong>
+            <strong>{latest.predicted_demand.toLocaleString()} units</strong>
           </div>
 
           <div>

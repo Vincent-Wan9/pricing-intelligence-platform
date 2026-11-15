@@ -1,4 +1,3 @@
-
 import { ExternalLink, Link2, LoaderCircle, Play, Scale } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -19,7 +18,9 @@ import type {
 export function Competitors() {
   // Fetch data
   const competitors = useApi<Competitor[]>("/competitors?limit=1000");
-  const mappings = useApi<CompetitorMapping[]>("/competitor-products?limit=1000");
+  const mappings = useApi<CompetitorMapping[]>(
+    "/competitor-products?limit=1000",
+  );
   const products = useApi<Product[]>("/products?limit=1000");
   const jobs = useApi<CrawlJob[]>("/crawl-jobs?limit=1000");
 
@@ -47,9 +48,7 @@ export function Competitors() {
       await jobs.refresh();
     } catch (error) {
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Unable to submit crawl"
+        error instanceof Error ? error.message : "Unable to submit crawl",
       );
     } finally {
       setActing("");
@@ -58,16 +57,10 @@ export function Competitors() {
 
   // Loading and error states
   const loading =
-    competitors.loading ||
-    mappings.loading ||
-    products.loading ||
-    jobs.loading;
+    competitors.loading || mappings.loading || products.loading || jobs.loading;
 
   const error =
-    competitors.error ||
-    mappings.error ||
-    products.error ||
-    jobs.error;
+    competitors.error || mappings.error || products.error || jobs.error;
 
   if (loading || error) {
     return <PageState loading={loading} error={error} />;
@@ -94,14 +87,11 @@ export function Competitors() {
           const active = jobs.data?.some(
             (job) =>
               job.competitor_id === competitor.competitor_id &&
-              (job.status === "pending" || job.status === "running")
+              (job.status === "pending" || job.status === "running"),
           );
 
           return (
-            <Card
-              key={competitor.competitor_id}
-              className="competitor-card"
-            >
+            <Card key={competitor.competitor_id} className="competitor-card">
               <div className="competitor-icon">
                 <Scale />
               </div>
@@ -123,7 +113,7 @@ export function Competitors() {
                 <p>
                   {mappings.data?.filter(
                     (mapping) =>
-                      mapping.competitor_id === competitor.competitor_id
+                      mapping.competitor_id === competitor.competitor_id,
                   ).length || 0}{" "}
                   mapped products
                 </p>
@@ -182,11 +172,11 @@ export function Competitors() {
               <tbody>
                 {mappings.data.map((mapping) => {
                   const product = products.data?.find(
-                    (p) => p.product_id === mapping.product_id
+                    (p) => p.product_id === mapping.product_id,
                   );
 
                   const competitor = competitors.data?.find(
-                    (c) => c.competitor_id === mapping.competitor_id
+                    (c) => c.competitor_id === mapping.competitor_id,
                   );
 
                   return (
@@ -199,9 +189,7 @@ export function Competitors() {
                         </Link>
                       </td>
 
-                      <td>
-                        {competitor?.competitor_name || "Unknown"}
-                      </td>
+                      <td>{competitor?.competitor_name || "Unknown"}</td>
 
                       <td>
                         <a

@@ -21,7 +21,7 @@ describe("crawl submission", () => {
         headers: {
           "Content-Type": "application/json",
         },
-      })
+      }),
     );
 
     // Act
@@ -34,7 +34,7 @@ describe("crawl submission", () => {
       expect.stringContaining("/crawl-jobs/competitors/c1"),
       expect.objectContaining({
         method: "POST",
-      })
+      }),
     );
   });
 });

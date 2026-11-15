@@ -34,17 +34,23 @@ describe("Products", () => {
     const search = screen.getByPlaceholderText("Search name, SKU, or brand…");
     for (const query of ["travel mug MUG-001", "mug-001 acme", "ACME"]) {
       fireEvent.change(search, { target: { value: query } });
-      expect(screen.getByRole("link", { name: /Travel Mug/ })).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /Travel Mug/ }),
+      ).toBeInTheDocument();
     }
 
     fireEvent.change(screen.getByRole("combobox"), {
       target: { value: "false" },
     });
-    expect(screen.getByText("No products match these filters.")).toBeInTheDocument();
+    expect(
+      screen.getByText("No products match these filters."),
+    ).toBeInTheDocument();
 
     fireEvent.change(screen.getByRole("combobox"), {
       target: { value: "true" },
     });
-    expect(screen.getByRole("link", { name: /Travel Mug/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Travel Mug/ }),
+    ).toBeInTheDocument();
   });
 });

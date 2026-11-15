@@ -1,4 +1,3 @@
-
 import { Check, LoaderCircle, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -12,17 +11,14 @@ import type { Product, Recommendation } from "../types";
 
 export function Recommendations() {
   // Fetch data
-  const recs = useApi<Recommendation[]>(
-    "/price-recommendations?limit=1000"
-  );
+  const recs = useApi<Recommendation[]>("/price-recommendations?limit=1000");
 
   const products = useApi<Product[]>("/products?limit=1000");
 
   // Authentication and permissions
   const { user } = useAuth();
 
-  const canReview =
-    user?.role === "approver" || user?.role === "admin";
+  const canReview = user?.role === "approver" || user?.role === "admin";
 
   // Component state
   const [filter, setFilter] = useState("all");
@@ -36,13 +32,11 @@ export function Recommendations() {
       (recs.data || [])
         .filter((recommendation) => {
           const matchesStatus =
-            filter === "all" ||
-            recommendation.status === filter;
+            filter === "all" || recommendation.status === filter;
 
           const productName =
             products.data?.find(
-              (product) =>
-                product.product_id === recommendation.product_id
+              (product) => product.product_id === recommendation.product_id,
             )?.product_name || "";
 
           const matchesSearch = productName
@@ -51,19 +45,17 @@ export function Recommendations() {
 
           return matchesStatus && matchesSearch;
         })
-        .sort((a, b) =>
-          b.generated_at.localeCompare(a.generated_at)
-        ),
-    [recs.data, products.data, filter, search]
+        .sort((a, b) => b.generated_at.localeCompare(a.generated_at)),
+    [recs.data, products.data, filter, search],
   );
 
   // Approve or reject a recommendation
   async function review(
     recommendation: Recommendation,
-    action: "approve" | "reject"
+    action: "approve" | "reject",
   ) {
     const reason = window.prompt(
-      `${action === "approve" ? "Approval" : "Rejection"} note (optional):`
+      `${action === "approve" ? "Approval" : "Rejection"} note (optional):`,
     );
 
     // User cancelled the prompt
@@ -79,16 +71,12 @@ export function Recommendations() {
         `/price-recommendations/${recommendation.recommendation_id}/${action}`,
         {
           reason: reason || null,
-        }
+        },
       );
 
       await recs.refresh();
     } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Action failed"
-      );
+      setError(error instanceof Error ? error.message : "Action failed");
     } finally {
       setActing("");
     }
@@ -101,9 +89,7 @@ export function Recommendations() {
 
   // Error state
   if (recs.error || products.error) {
-    return (
-      <PageState error={recs.error || products.error} />
-    );
+    return <PageState error={recs.error || products.error} />;
   }
 
   return (
@@ -116,26 +102,23 @@ export function Recommendations() {
 
       {/* Status filters */}
       <div className="status-tabs">
-        {["all", "pending", "approved", "rejected", "applied"].map(
-          (status) => (
-            <button
-              key={status}
-              className={filter === status ? "active" : ""}
-              onClick={() => setFilter(status)}
-            >
-              {status}
+        {["all", "pending", "approved", "rejected", "applied"].map((status) => (
+          <button
+            key={status}
+            className={filter === status ? "active" : ""}
+            onClick={() => setFilter(status)}
+          >
+            {status}
 
-              <span>
-                {status === "all"
-                  ? recs.data?.length
-                  : recs.data?.filter(
-                      (recommendation) =>
-                        recommendation.status === status
-                    ).length}
-              </span>
-            </button>
-          )
-        )}
+            <span>
+              {status === "all"
+                ? recs.data?.length
+                : recs.data?.filter(
+                    (recommendation) => recommendation.status === status,
+                  ).length}
+            </span>
+          </button>
+        ))}
       </div>
 
       {/* Search */}
@@ -152,11 +135,7 @@ export function Recommendations() {
       </div>
 
       {/* Action error */}
-      {error && (
-        <div className="form-error">
-          {error}
-        </div>
-      )}
+      {error && <div className="form-error">{error}</div>}
 
       {/* Recommendations table */}
       {!rows.length ? (
@@ -181,8 +160,7 @@ export function Recommendations() {
             <tbody>
               {rows.map((recommendation) => {
                 const product = products.data?.find(
-                  (item) =>
-                    item.product_id === recommendation.product_id
+                  (item) => item.product_id === recommendation.product_id,
                 );
 
                 const change =
@@ -199,30 +177,20 @@ export function Recommendations() {
                         {product?.product_name || "Unknown product"}
                       </strong>
 
-                      <small className="table-sub">
-                        {product?.sku}
-                      </small>
+                      <small className="table-sub">{product?.sku}</small>
                     </td>
 
                     {/* Current price */}
-                    <td>
-                      {money(recommendation.current_price)}
-                    </td>
+                    <td>{money(recommendation.current_price)}</td>
 
                     {/* Recommended price */}
                     <td>
-                      <strong>
-                        {money(recommendation.recommended_price)}
-                      </strong>
+                      <strong>{money(recommendation.recommended_price)}</strong>
                     </td>
 
                     {/* Expected price change */}
                     <td>
-                      <span
-                        className={
-                          change >= 0 ? "positive" : "negative"
-                        }
-                      >
+                      <span className={change >= 0 ? "positive" : "negative"}>
                         {percent(change)}
                       </span>
                     </td>
@@ -238,9 +206,7 @@ export function Recommendations() {
                     </td>
 
                     {/* Generated date */}
-                    <td>
-                      {dateTime(recommendation.generated_at)}
-                    </td>
+                    <td>{dateTime(recommendation.generated_at)}</td>
 
                     {/* Approval / rejection actions */}
                     {canReview && (
@@ -257,8 +223,7 @@ export function Recommendations() {
                               }
                             >
                               {acting ===
-                              recommendation.recommendation_id +
-                                "approve" ? (
+                              recommendation.recommendation_id + "approve" ? (
                                 <LoaderCircle className="spin" />
                               ) : (
                                 <Check />
@@ -275,8 +240,7 @@ export function Recommendations() {
                               }
                             >
                               {acting ===
-                              recommendation.recommendation_id +
-                                "reject" ? (
+                              recommendation.recommendation_id + "reject" ? (
                                 <LoaderCircle className="spin" />
                               ) : (
                                 <X />

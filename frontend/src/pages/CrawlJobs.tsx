@@ -1,4 +1,3 @@
-
 import {
   AlertTriangle,
   Bot,
@@ -41,13 +40,13 @@ export function CrawlJobs() {
   // Detect active crawl jobs
   const active =
     initialJobs.data?.some(
-      (job) => job.status === "pending" || job.status === "running"
+      (job) => job.status === "pending" || job.status === "running",
     ) ?? false;
 
   // Poll active jobs every 3 seconds
   const polledJobs = useApi<CrawlJob[]>(
     active ? "/crawl-jobs?limit=1000" : null,
-    active ? 3000 : 0
+    active ? 3000 : 0,
   );
 
   const jobs = polledJobs.data || initialJobs.data || [];
@@ -58,10 +57,8 @@ export function CrawlJobs() {
   // Filter jobs by selected competitor
   const filtered = useMemo(
     () =>
-      selected
-        ? jobs.filter((job) => job.competitor_id === selected)
-        : jobs,
-    [jobs, selected]
+      selected ? jobs.filter((job) => job.competitor_id === selected) : jobs,
+    [jobs, selected],
   );
 
   // Submit a new crawl job
@@ -72,19 +69,17 @@ export function CrawlJobs() {
 
     try {
       const job = await api.post<CrawlJob>(
-        `/crawl-jobs/competitors/${competitorId}`
+        `/crawl-jobs/competitors/${competitorId}`,
       );
 
       setNotice(
-        `Crawl submitted. Job ${job.job_id.slice(0, 8)} is ${job.status}.`
+        `Crawl submitted. Job ${job.job_id.slice(0, 8)} is ${job.status}.`,
       );
 
       await initialJobs.refresh();
     } catch (error) {
       setActionError(
-        error instanceof Error
-          ? error.message
-          : "Unable to submit crawl"
+        error instanceof Error ? error.message : "Unable to submit crawl",
       );
     } finally {
       setSubmitting("");
@@ -92,27 +87,15 @@ export function CrawlJobs() {
   }
 
   // Loading state
-  if (
-    initialJobs.loading ||
-    competitors.loading ||
-    schedule.loading
-  ) {
+  if (initialJobs.loading || competitors.loading || schedule.loading) {
     return <PageState loading />;
   }
 
   // Error state
-  if (
-    initialJobs.error ||
-    competitors.error ||
-    schedule.error
-  ) {
+  if (initialJobs.error || competitors.error || schedule.error) {
     return (
       <PageState
-        error={
-          initialJobs.error ||
-          competitors.error ||
-          schedule.error
-        }
+        error={initialJobs.error || competitors.error || schedule.error}
       />
     );
   }
@@ -137,17 +120,9 @@ export function CrawlJobs() {
       </div>
 
       {/* Notifications */}
-      {notice && (
-        <div className="form-success">
-          {notice}
-        </div>
-      )}
+      {notice && <div className="form-success">{notice}</div>}
 
-      {actionError && (
-        <div className="form-error">
-          {actionError}
-        </div>
-      )}
+      {actionError && <div className="form-error">{actionError}</div>}
 
       {/* Crawl job statistics */}
       <div className="kpi-grid crawl-kpis">
@@ -243,7 +218,7 @@ export function CrawlJobs() {
                     jobs.some(
                       (job) =>
                         job.competitor_id === competitor.competitor_id &&
-                        (job.status === "pending" || job.status === "running")
+                        (job.status === "pending" || job.status === "running"),
                     )
                   }
                   onClick={() => void trigger(competitor.competitor_id)}
@@ -272,10 +247,7 @@ export function CrawlJobs() {
           }
         />
 
-        <CrawlJobTable
-          jobs={filtered}
-          competitors={competitors.data || []}
-        />
+        <CrawlJobTable jobs={filtered} competitors={competitors.data || []} />
       </Card>
     </>
   );

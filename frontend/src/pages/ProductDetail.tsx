@@ -1,4 +1,3 @@
-
 import {
   ArrowLeft,
   ExternalLink,
@@ -51,44 +50,36 @@ export function ProductDetail() {
   const [forecastNotice, setForecastNotice] = useState("");
 
   // Fetch product data
-  const product = useApi<Product>(
-    id ? `/products/${id}` : null
-  );
+  const product = useApi<Product>(id ? `/products/${id}` : null);
 
-  const inventory = useApi<Inventory>(
-    id ? `/inventory/product/${id}` : null
-  );
+  const inventory = useApi<Inventory>(id ? `/inventory/product/${id}` : null);
 
-  const rules = useApi<PricingRule[]>(
-    "/pricing-rules?limit=1000"
-  );
+  const rules = useApi<PricingRule[]>("/pricing-rules?limit=1000");
 
   const mappings = useApi<CompetitorMapping[]>(
-    id ? `/products/${id}/competitor-mappings` : null
+    id ? `/products/${id}/competitor-mappings` : null,
   );
 
   const prices = useApi<CompetitorPrice[]>(
-    id ? `/products/${id}/competitor-prices?limit=500` : null
+    id ? `/products/${id}/competitor-prices?limit=500` : null,
   );
 
   const history = useApi<PriceHistory[]>(
-    id ? `/products/${id}/price-history?limit=100` : null
+    id ? `/products/${id}/price-history?limit=100` : null,
   );
 
   const recs = useApi<Recommendation[]>(
-    id ? `/price-recommendations/product/${id}/history` : null
+    id ? `/price-recommendations/product/${id}/history` : null,
   );
 
-  const competitors = useApi<Competitor[]>(
-    "/competitors?limit=1000"
-  );
+  const competitors = useApi<Competitor[]>("/competitors?limit=1000");
 
   const demand = useApi<DemandHistory[]>(
-    id ? `/demand-forecasts/history/product/${id}?limit=365` : null
+    id ? `/demand-forecasts/history/product/${id}?limit=365` : null,
   );
 
   const forecasts = useApi<DemandForecast[]>(
-    id ? `/demand-forecasts/product/${id}/history` : null
+    id ? `/demand-forecasts/product/${id}/history` : null,
   );
 
   // Product loading and error states
@@ -97,9 +88,7 @@ export function ProductDetail() {
   }
 
   if (product.error || !product.data) {
-    return (
-      <PageState error={product.error || "Product not found"} />
-    );
+    return <PageState error={product.error || "Product not found"} />;
   }
 
   const p = product.data;
@@ -107,38 +96,29 @@ export function ProductDetail() {
   // Latest competitor prices
   const latest = latestPrices(prices.data || []);
 
-  const values = latest.map((price) =>
-    Number(price.competitor_price)
-  );
+  const values = latest.map((price) => Number(price.competitor_price));
 
-  const low = values.length
-    ? Math.min(...values)
-    : null;
+  const low = values.length ? Math.min(...values) : null;
 
   const avg = values.length
     ? values.reduce((sum, value) => sum + value, 0) / values.length
     : null;
 
   const position =
-    avg == null
-      ? null
-      : ((Number(p.current_price) - avg) / avg) * 100;
+    avg == null ? null : ((Number(p.current_price) - avg) / avg) * 100;
 
   // Product price history chart
-  const productSeries = [...(history.data || [])]
-    .reverse()
-    .map((item) => ({
-      date: item.changed_at,
-      value: Number(item.new_price),
-    }));
+  const productSeries = [...(history.data || [])].reverse().map((item) => ({
+    date: item.changed_at,
+    value: Number(item.new_price),
+  }));
 
   // Competitor price history chart
   const compSeries: ChartSeries[] = (mappings.data || [])
     .map((mapping, index) => ({
       name:
         competitors.data?.find(
-          (competitor) =>
-            competitor.competitor_id === mapping.competitor_id
+          (competitor) => competitor.competitor_id === mapping.competitor_id,
         )?.competitor_name || mapping.competitor_product_name,
 
       color: ["#f59e0b", "#8b5cf6", "#06b6d4"][index % 3],
@@ -146,12 +126,9 @@ export function ProductDetail() {
       points: (prices.data || [])
         .filter(
           (price) =>
-            price.competitor_product_id ===
-            mapping.competitor_product_id
+            price.competitor_product_id === mapping.competitor_product_id,
         )
-        .sort((a, b) =>
-          a.crawl_timestamp.localeCompare(b.crawl_timestamp)
-        )
+        .sort((a, b) => a.crawl_timestamp.localeCompare(b.crawl_timestamp))
         .map((price) => ({
           date: price.crawl_timestamp,
           value: Number(price.competitor_price),
@@ -160,19 +137,15 @@ export function ProductDetail() {
     .filter((series) => series.points.length);
 
   // Forecast permissions
-  const canGenerate =
-    user?.role === "editor" || user?.role === "admin";
+  const canGenerate = user?.role === "editor" || user?.role === "admin";
 
   // Upcoming forecasts
   const forecastRows = (forecasts.data || [])
     .filter(
       (forecast) =>
-        new Date(forecast.forecast_date) >=
-        new Date(new Date().toDateString())
+        new Date(forecast.forecast_date) >= new Date(new Date().toDateString()),
     )
-    .sort((a, b) =>
-      a.forecast_date.localeCompare(b.forecast_date)
-    );
+    .sort((a, b) => a.forecast_date.localeCompare(b.forecast_date));
 
   // Generate demand forecast
   async function generateForecast() {
@@ -184,19 +157,17 @@ export function ProductDetail() {
 
     try {
       const result = await api.post<ForecastGenerationResult>(
-        `/demand-forecasts/generate/${id}?horizon_days=${horizon}`
+        `/demand-forecasts/generate/${id}?horizon_days=${horizon}`,
       );
 
       setForecastNotice(
-        `${result.horizon_days}-day forecast generated with ${result.model_name}.`
+        `${result.horizon_days}-day forecast generated with ${result.model_name}.`,
       );
 
       await forecasts.refresh();
     } catch (error) {
       setForecastError(
-        error instanceof Error
-          ? error.message
-          : "Unable to generate forecast"
+        error instanceof Error ? error.message : "Unable to generate forecast",
       );
     } finally {
       setGenerating(false);
@@ -213,9 +184,7 @@ export function ProductDetail() {
 
       {/* Product header */}
       <div className="detail-title">
-        <div className="product-thumb large">
-          {p.product_name[0]}
-        </div>
+        <div className="product-thumb large">{p.product_name[0]}</div>
 
         <div>
           <div className="title-line">
@@ -251,9 +220,7 @@ export function ProductDetail() {
 
         <Card>
           <span>Market position</span>
-          <strong>
-            {position == null ? "—" : percent(position)}
-          </strong>
+          <strong>{position == null ? "—" : percent(position)}</strong>
           <small>Compared with market average</small>
         </Card>
 
@@ -301,22 +268,14 @@ export function ProductDetail() {
 
             <div>
               <dt>Target margin</dt>
-              <dd>
-                {p.target_margin
-                  ? `${p.target_margin}%`
-                  : "—"}
-              </dd>
+              <dd>{p.target_margin ? `${p.target_margin}%` : "—"}</dd>
             </div>
 
             <div>
               <dt>Auto pricing</dt>
               <dd>
                 <StatusBadge
-                  status={
-                    p.auto_pricing_enabled
-                      ? "Enabled"
-                      : "Disabled"
-                  }
+                  status={p.auto_pricing_enabled ? "Enabled" : "Disabled"}
                 />
               </dd>
             </div>
@@ -339,9 +298,7 @@ export function ProductDetail() {
                   <select
                     aria-label="Forecast horizon"
                     value={horizon}
-                    onChange={(event) =>
-                      setHorizon(Number(event.target.value))
-                    }
+                    onChange={(event) => setHorizon(Number(event.target.value))}
                   >
                     {[7, 14, 30, 60, 90].map((value) => (
                       <option key={value} value={value}>
@@ -368,16 +325,10 @@ export function ProductDetail() {
           />
 
           {forecastNotice && (
-            <div className="form-success">
-              {forecastNotice}
-            </div>
+            <div className="form-success">{forecastNotice}</div>
           )}
 
-          {forecastError && (
-            <div className="form-error">
-              {forecastError}
-            </div>
-          )}
+          {forecastError && <div className="form-error">{forecastError}</div>}
 
           {demand.loading || forecasts.loading ? (
             <PageState loading />
@@ -400,9 +351,7 @@ export function ProductDetail() {
           />
 
           {!latest.length ? (
-            <PageState
-              empty="No competitor prices have been collected for this product."
-            />
+            <PageState empty="No competitor prices have been collected for this product." />
           ) : (
             <div className="table-wrap">
               <table>
@@ -422,12 +371,11 @@ export function ProductDetail() {
                     const mapping = mappings.data?.find(
                       (item) =>
                         item.competitor_product_id ===
-                        price.competitor_product_id
+                        price.competitor_product_id,
                     );
 
                     const competitor = competitors.data?.find(
-                      (item) =>
-                        item.competitor_id === mapping?.competitor_id
+                      (item) => item.competitor_id === mapping?.competitor_id,
                     );
 
                     const diff =
@@ -440,8 +388,7 @@ export function ProductDetail() {
                       <tr key={price.price_id}>
                         <td>
                           <strong>
-                            {competitor?.competitor_name ||
-                              "Competitor"}
+                            {competitor?.competitor_name || "Competitor"}
                           </strong>
                         </td>
 
@@ -461,22 +408,12 @@ export function ProductDetail() {
                         </td>
 
                         <td>
-                          <strong>
-                            {money(price.competitor_price)}
-                          </strong>
+                          <strong>{money(price.competitor_price)}</strong>
                         </td>
 
                         <td>
-                          <span
-                            className={
-                              diff > 0 ? "negative" : "positive"
-                            }
-                          >
-                            {diff > 0 ? (
-                              <TrendingUp />
-                            ) : (
-                              <TrendingDown />
-                            )}
+                          <span className={diff > 0 ? "negative" : "positive"}>
+                            {diff > 0 ? <TrendingUp /> : <TrendingDown />}
                             {percent(diff)}
                           </span>
                         </td>
@@ -520,14 +457,12 @@ export function ProductDetail() {
           <Info
             icon={<ShieldCheck />}
             title={
-              rules.data?.find(
-                (rule) => rule.rule_id === p.rule_id
-              )?.rule_name || "Unknown rule"
+              rules.data?.find((rule) => rule.rule_id === p.rule_id)
+                ?.rule_name || "Unknown rule"
             }
             body={
-              rules.data?.find(
-                (rule) => rule.rule_id === p.rule_id
-              )?.rule_description || "Rule details unavailable"
+              rules.data?.find((rule) => rule.rule_id === p.rule_id)
+                ?.rule_description || "Rule details unavailable"
             }
           />
         </Card>
@@ -539,9 +474,7 @@ export function ProductDetail() {
           {recs.loading ? (
             <PageState loading />
           ) : !recs.data?.length ? (
-            <PageState
-              empty="No recommendations for this product."
-            />
+            <PageState empty="No recommendations for this product." />
           ) : (
             <div className="recommendation-list">
               {recs.data.slice(0, 5).map((rec) => (
@@ -550,15 +483,11 @@ export function ProductDetail() {
                   key={rec.recommendation_id}
                 >
                   <div className="recommendation-head">
-                    <strong>
-                      {money(rec.recommended_price)}
-                    </strong>
+                    <strong>{money(rec.recommended_price)}</strong>
 
                     <StatusBadge status={rec.status} />
 
-                    <small>
-                      {dateTime(rec.generated_at)}
-                    </small>
+                    <small>{dateTime(rec.generated_at)}</small>
                   </div>
 
                   <p>{rec.recommendation_reason}</p>
@@ -570,7 +499,7 @@ export function ProductDetail() {
                     competitorPrice={latest[0]}
                     inventory={inventory.data || undefined}
                     rule={rules.data?.find(
-                      (rule) => rule.rule_id === rec.rule_id
+                      (rule) => rule.rule_id === rec.rule_id,
                     )}
                   />
                 </div>
@@ -586,22 +515,15 @@ export function ProductDetail() {
 // Get the latest observed price for each competitor product
 function latestPrices(prices: CompetitorPrice[]) {
   return Object.values(
-    prices.reduce<Record<string, CompetitorPrice>>(
-      (accumulator, price) => {
-        const previous =
-          accumulator[price.competitor_product_id];
+    prices.reduce<Record<string, CompetitorPrice>>((accumulator, price) => {
+      const previous = accumulator[price.competitor_product_id];
 
-        if (
-          !previous ||
-          price.crawl_timestamp > previous.crawl_timestamp
-        ) {
-          accumulator[price.competitor_product_id] = price;
-        }
+      if (!previous || price.crawl_timestamp > previous.crawl_timestamp) {
+        accumulator[price.competitor_product_id] = price;
+      }
 
-        return accumulator;
-      },
-      {}
-    )
+      return accumulator;
+    }, {}),
   );
 }
 

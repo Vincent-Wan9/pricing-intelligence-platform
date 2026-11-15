@@ -1,4 +1,3 @@
-
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { BarChart3, LoaderCircle, LockKeyhole } from "lucide-react";
@@ -37,16 +36,11 @@ export function Login() {
     try {
       await login(identifier, password);
 
-      const destination =
-        (location.state as { from?: string })?.from || "/";
+      const destination = (location.state as { from?: string })?.from || "/";
 
       navigate(destination, { replace: true });
     } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Invalid credentials"
-      );
+      setError(error instanceof Error ? error.message : "Invalid credentials");
     } finally {
       setBusy(false);
     }
@@ -71,8 +65,8 @@ export function Login() {
           </h1>
 
           <p>
-            Monitor competitors, understand price position,
-            and turn recommendations into action.
+            Monitor competitors, understand price position, and turn
+            recommendations into action.
           </p>
 
           <div className="login-feature">
@@ -82,8 +76,7 @@ export function Login() {
               <strong>Pricing intelligence at a glance</strong>
 
               <small>
-                One workspace for products, competitors,
-                and pricing decisions.
+                One workspace for products, competitors, and pricing decisions.
               </small>
             </span>
           </div>
@@ -93,24 +86,17 @@ export function Login() {
       {/* Right panel: Login form */}
       <div className="login-form-wrap">
         <form className="login-form" onSubmit={submit}>
-          <div className="mobile-login-brand">
-            PricePilot
-          </div>
+          <div className="mobile-login-brand">PricePilot</div>
 
           <h2>Welcome back</h2>
           <p>Sign in to your pricing workspace</p>
 
           {/* Error message */}
-          {error && (
-            <div className="form-error">
-              {error}
-            </div>
-          )}
+          {error && <div className="form-error">{error}</div>}
 
           {/* Username / Email */}
           <label>
             Email or username
-
             <input
               autoFocus
               autoComplete="username"
@@ -124,7 +110,6 @@ export function Login() {
           {/* Password */}
           <label>
             Password
-
             <input
               type="password"
               autoComplete="current-password"
@@ -137,10 +122,7 @@ export function Login() {
           </label>
 
           {/* Submit button */}
-          <button
-            className="button primary full"
-            disabled={busy}
-          >
+          <button className="button primary full" disabled={busy}>
             {busy ? (
               <>
                 <LoaderCircle className="spin" />

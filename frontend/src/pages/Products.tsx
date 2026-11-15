@@ -1,4 +1,3 @@
-
 import { Search, SlidersHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -24,19 +23,16 @@ export function Products() {
     () =>
       (products.data || []).filter((product) => {
         const matchesStatus =
-          status === "all" ||
-          String(product.is_active) === status;
+          status === "all" || String(product.is_active) === status;
 
         const searchableText =
           `${product.product_name} ${product.sku} ${product.brand || ""}`.toLowerCase();
 
-        const matchesSearch = searchableText.includes(
-          search.toLowerCase()
-        );
+        const matchesSearch = searchableText.includes(search.toLowerCase());
 
         return matchesStatus && matchesSearch;
       }),
-    [products.data, search, status]
+    [products.data, search, status],
   );
 
   // Loading state
@@ -45,10 +41,7 @@ export function Products() {
   }
 
   // Error state
-  const error =
-    products.error ||
-    inventory.error ||
-    rules.error;
+  const error = products.error || inventory.error || rules.error;
 
   if (error) {
     return (
@@ -124,11 +117,11 @@ export function Products() {
             <tbody>
               {filtered.map((product) => {
                 const stock = inventory.data?.find(
-                  (item) => item.product_id === product.product_id
+                  (item) => item.product_id === product.product_id,
                 );
 
                 const rule = rules.data?.find(
-                  (item) => item.rule_id === product.rule_id
+                  (item) => item.rule_id === product.rule_id,
                 );
 
                 return (
@@ -162,30 +155,24 @@ export function Products() {
 
                     {/* Price range */}
                     <td>
-                      {money(product.min_price)} –{" "}
-                      {money(product.max_price)}
+                      {money(product.min_price)} – {money(product.max_price)}
                     </td>
 
                     {/* Inventory */}
                     <td>
                       <span
                         className={
-                          stock &&
-                          stock.on_hand_qty <= product.safety_stock
+                          stock && stock.on_hand_qty <= product.safety_stock
                             ? "stock-low"
                             : ""
                         }
                       >
-                        {stock
-                          ? `${stock.on_hand_qty} units`
-                          : "Not tracked"}
+                        {stock ? `${stock.on_hand_qty} units` : "Not tracked"}
                       </span>
                     </td>
 
                     {/* Pricing rule */}
-                    <td>
-                      {rule?.rule_name || "—"}
-                    </td>
+                    <td>{rule?.rule_name || "—"}</td>
 
                     {/* Product status */}
                     <td>
